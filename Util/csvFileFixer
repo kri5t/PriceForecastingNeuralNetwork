@@ -13,7 +13,7 @@ class csvFileFixer():
 
                     if len(row[rowNumberToFix]) > 8:
                         row[rowNumberToFix] = str(row[rowNumberToFix])[0:2] + "/" + str(row[0])[3:5] + "/" + str(
-                            row[0])[8:10] + "\n"
+                            row[0])[8:10]
                         if str(row[0])[0:1] == "0": row[rowNumberToFix] = str(row[rowNumberToFix])[1:]
                     writer.writerow(row)
 
@@ -24,7 +24,16 @@ class csvFileFixer():
                 reader = csv.reader(readFile, delimiter=';')
                 writer = csv.writer(writeFile, delimiter=';')
                 for row in reader:
-                    sys.stdout.write(row)
+                    sys.stdout.write(len(row))
+
+    def printCsvDocument(self, documentToPrint):
+        """Prints the specified CSV document"""
+        with open(documentToPrint, 'rb') as readFile:
+            reader = csv.reader(readFile, delimiter=';')
+            for row in reader:
+                for index in range(len(row)):
+                    sys.stdout.write(row[index] + "\t\t")
+                sys.stdout.write("\n")
 
 
 def main():
@@ -33,6 +42,7 @@ def main():
     fileToSaveToPath = '/Users/kristian/Downloads/CSV_FORMAT_PRICES_FIXED.csv'
 
     fixer.fixDateFormat(filePath, fileToSaveToPath, 0)
+    fixer.printCsvDocument('/Users/kristian/Downloads/CSV_FORMAT_PRICES_FIXED.csv')
 
 
 if __name__ == '__main__':
