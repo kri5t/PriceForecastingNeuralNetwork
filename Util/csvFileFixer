@@ -1,0 +1,39 @@
+import csv
+import sys
+
+
+class csvFileFixer():
+    def fixDateFormat(self, filePath, fileToSaveToPath, rowNumberToFix):
+        """Hand a file to it and it fixes the format"""
+        with open(fileToSaveToPath, 'wb') as writeFile:
+            with open(filePath, 'rb') as csvFile:
+                reader = csv.reader(csvFile, delimiter=';')
+                writer = csv.writer(writeFile, delimiter=';')
+                for row in reader:
+
+                    if len(row[rowNumberToFix]) > 8:
+                        row[rowNumberToFix] = str(row[rowNumberToFix])[0:2] + "/" + str(row[0])[3:5] + "/" + str(
+                            row[0])[8:10] + "\n"
+                        if str(row[0])[0:1] == "0": row[rowNumberToFix] = str(row[rowNumberToFix])[1:]
+                    writer.writerow(row)
+
+    def copyRow(self, fromDocument, rowToCopy, toDocument, toWhatRow):
+        """Copy one row from one document to another document"""
+        with open(toDocument, 'wb') as writeFile:
+            with open(fromDocument, 'rb') as readFile:
+                reader = csv.reader(readFile, delimiter=';')
+                writer = csv.writer(writeFile, delimiter=';')
+                for row in reader:
+                    sys.stdout.write(row)
+
+
+def main():
+    fixer = csvFileFixer()
+    filePath = '/Users/kristian/Downloads/CSV_FORMAT_PRICES.csv'
+    fileToSaveToPath = '/Users/kristian/Downloads/CSV_FORMAT_PRICES_FIXED.csv'
+
+    fixer.fixDateFormat(filePath, fileToSaveToPath, 0)
+
+
+if __name__ == '__main__':
+    main()
