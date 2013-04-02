@@ -4,16 +4,18 @@ from MyUtil.csvFileFixer import csvFileFixer
 import csv
 import matplotlib.pyplot as plt
 import numpy as np
-
+import matplotlib.mlab as mlab
 
 class graphPlotter():
 
     def __init__(self):
         """ Init method """
 
-    def plot(self, fromCsvFile, col1, col2):
-        plt.plotfile(fromCsvFile, delimiter=';', cols=(col1, col2),
-                     names=('Wind Speed', 'Electricity Price'), linestyle='None', marker='.')
+    def plot(self, fromCsvFile, col1, col1Name, col2, col2Name):
+        #myData = mlab.csv2rec(fromCsvFile, delimiter=';', skiprows=1)
+        #myData.dump('/Users/kristian/Downloads/DUMP.csv')
+        plt.plotfile(fromCsvFile, delimiter=';', cols=(col1, col2), skiprows=1,
+                     names=(col1Name, col2Name), linestyle='None', marker='.')
 
         y = []
         x = []
@@ -32,12 +34,17 @@ class graphPlotter():
 
 def main():
     document = '/Users/kristian/Downloads/CSV_FORMAT_PRICES_FIXED.csv'
+    cleanedDocument = '/Users/kristian/Downloads/CSV_FORMAT_PRICES_CLEANED.csv'
+    twoRows = '/Users/kristian/Downloads/CSV_FORMAT_PRICES_2rows.csv'
+    correctedData = '/Users/kristian/Downloads/CSV_FORMAT_PRICES_correctedData.csv'
 
     fileFixer = csvFileFixer()
-    fileFixer.printCsvDocument(document)
-
+    fileFixer.cleanMinusAndNullInDocumentRow(document, cleanedDocument, [2, 4])
+    fileFixer.printCsvDocument(cleanedDocument)
+    fileFixer.twoRowsToOneFile(cleanedDocument, twoRows, 2, 4)
+    fileFixer.removeToHighAndToLow(twoRows, correctedData, [0])
     gp = graphPlotter()
-    gp.plot(document, 0, 1)
+    gp.plot(correctedData, 1, "DK1", 0, "Temperature")
 
 if __name__ == '__main__':
     main()
