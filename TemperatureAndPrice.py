@@ -8,20 +8,23 @@ import matplotlib.mlab as mlab
 
 class graphPlotter():
 
-    def __init__(self):
+    delimiter = ""
+
+    def __init__(self, delimiter):
         """ Init method """
+        self.delimiter = delimiter
 
     def plot(self, fromCsvFile, col1, col1Name, col2, col2Name):
         #myData = mlab.csv2rec(fromCsvFile, delimiter=';', skiprows=1)
         #myData.dump('/Users/kristian/Downloads/DUMP.csv')
-        plt.plotfile(fromCsvFile, delimiter=';', cols=(col1, col2), skiprows=1,
+        plt.plotfile(fromCsvFile, delimiter=self.delimiter, cols=(col1, col2), skiprows=1,
                      names=(col1Name, col2Name), linestyle='None', marker='.')
 
         y = []
         x = []
 
         with open(fromCsvFile, 'rb') as csvFile:
-            dat = csv.reader(csvFile, delimiter=';')
+            dat = csv.reader(csvFile, delimiter=self.delimiter)
             for row in dat:
                 y.append(int(row[col2]))
                 x.append(int(row[col1]))
@@ -33,17 +36,20 @@ class graphPlotter():
 
 
 def main():
-    document = '/Users/kristian/Downloads/CSV_FORMAT_PRICES_FIXED.csv'
-    cleanedDocument = '/Users/kristian/Downloads/CSV_FORMAT_PRICES_CLEANED.csv'
-    twoRows = '/Users/kristian/Downloads/CSV_FORMAT_PRICES_2rows.csv'
-    correctedData = '/Users/kristian/Downloads/CSV_FORMAT_PRICES_correctedData.csv'
+    fileName = 'DA_EXCEL_FOR_DA_PRICE_FORECAST'
+    filePath = fileName + '.csv'
+    #document = fileName + '_FIXED.csv'
+    cleanedDocument = fileName + '_CLEANED.csv'
+    twoRows = fileName + '_2ROWS.csv'
+    correctedData = fileName + '_CORRECTED_DATA.csv'
 
-    fileFixer = csvFileFixer()
-    fileFixer.cleanMinusAndNullInDocumentRow(document, cleanedDocument, [2, 4])
+    fileFixer = csvFileFixer(",")
+    #fileFixer.fixDateFormat(filePath, document, 0)
+    fileFixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [2, 4])
     fileFixer.printCsvDocument(cleanedDocument)
     fileFixer.twoRowsToOneFile(cleanedDocument, twoRows, 2, 4)
     fileFixer.removeToHighAndToLow(twoRows, correctedData, [0])
-    gp = graphPlotter()
+    gp = graphPlotter(",")
     gp.plot(correctedData, 1, "DK1", 0, "Temperature")
 
 if __name__ == '__main__':
