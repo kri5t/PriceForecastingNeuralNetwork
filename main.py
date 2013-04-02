@@ -2,13 +2,9 @@ import sys
 import csv
 from pybrain.datasets import SupervisedDataSet
 
-DS = SupervisedDataSet(3, 2)
-DS.appendLinked([1, 2, 3], [4, 5])
-sys.stdout.write("hello\n")
-sys.stdout.write(DS['input'])
 
 class GreenEnergyDataSet(SupervisedDataSet):
-    """ A dataset for the XOR function."""
+    """ A data set for the XOR function."""
     def __init__(self):
         SupervisedDataSet.__init__(self, 2, 1)
 
