@@ -3,7 +3,6 @@ import sys
 
 
 class csvFileFixer():
-
     delimiter = ''
 
     def __init__(self, delimiter):
@@ -73,6 +72,9 @@ class csvFileFixer():
                         skipFirstRow = False
 
     def removeToHighAndToLow(self, document, toDocument, columns):
+        """
+
+        """
         value = [len(columns)]
         numberOfValues = [len(columns)]
         medians = [len(columns)]
@@ -103,7 +105,9 @@ class csvFileFixer():
         sys.stdout.write(str(entries - entriesWritten) + "\n")
 
     def twoRowsToOneFile(self, document, toFile, row1, row2):
-        """Creates new CSV file with only 2 rows"""
+        """
+        Creates new CSV file with only 2 rows
+        """
         with open(toFile, 'wb') as writeToFile:
             with open(document, 'rU') as readFromFile:
                 reader = csv.reader(readFromFile, delimiter=self.delimiter)
@@ -111,41 +115,36 @@ class csvFileFixer():
                 for row in reader:
                     writer.writerow([row[row1], row[row2]])
 
-    def concatenateWeekdaysAndGiveAverages(self, document, weekdayRow, priceRow):
-        numberOfWeekdays = [0, 0, 0, 0, 0, 0, 0]
-        weekdaysCombined = [0, 0, 0, 0, 0, 0, 0]
-        medianPricesForAllWeekdays = [0, 0, 0, 0, 0, 0, 0]
+    def concatenateEntriesAndGiveAverage(self, document, casesRow, priceRow, arrayOfCases):
+        """
+        Concatenates the prices for the given cases and creates an array of average price.
+        :param document: document to read from
+        :param casesRow: What row to read cases from
+        :param priceRow: The row to get prices from
+        :param arrayOfCases: An array of what cases to concatenate
+        :return:
+        """
+        numberOfWeekdays = [0] * len(arrayOfCases)
+        weekdaysCombined = [0] * len(arrayOfCases)
+        medianPricesForAllWeekdays = [0] * len(arrayOfCases)
         with open(document, 'rU') as readFromFile:
             reader = csv.reader(readFromFile, delimiter=self.delimiter)
             for row in reader:
-                if row[weekdayRow] == "Mon":
-                    numberOfWeekdays[0] += 1
-                    weekdaysCombined[0] += float(row[priceRow])
-                elif row[weekdayRow] == "Tue":
-                    numberOfWeekdays[1] += 1
-                    weekdaysCombined[1] += float(row[priceRow])
-                elif row[weekdayRow] == "Wed":
-                    numberOfWeekdays[2] += 1
-                    weekdaysCombined[2] += float(row[priceRow])
-                elif row[weekdayRow] == "Thu":
-                    numberOfWeekdays[3] += 1
-                    weekdaysCombined[3] += float(row[priceRow])
-                elif row[weekdayRow] == "Fri":
-                    numberOfWeekdays[4] += 1
-                    weekdaysCombined[4] += float(row[priceRow])
-                elif row[weekdayRow] == "Sat":
-                    numberOfWeekdays[5] += 1
-                    weekdaysCombined[5] += float(row[priceRow])
-                elif row[weekdayRow] == "Sun":
-                    numberOfWeekdays[6] += 1
-                    weekdaysCombined[6] += float(row[priceRow])
-                else:
-                    sys.stdout.write("found nothing")
+                for index in range(len(arrayOfCases)):
+                    if row[casesRow] == arrayOfCases[index]:
+                        numberOfWeekdays[index] += 1
+                        weekdaysCombined[index] += float(row[priceRow])
         for index in range(len(numberOfWeekdays)):
             medianPricesForAllWeekdays[index] = weekdaysCombined[index] / numberOfWeekdays[index]
-            sys.stdout.write("median: " + str(medianPricesForAllWeekdays[index]) + "  weekdays: " + str(weekdaysCombined[index]) + "  numberOfWeekdays: " + str(numberOfWeekdays[index]) +"\n")
+            sys.stdout.write("median: " + str(medianPricesForAllWeekdays[index]) + "  sumOfPrice: " + str(
+                weekdaysCombined[index]) + "  numberOfTimes: " + str(numberOfWeekdays[index]) + "\n")
+        sys.stdout.write("\n")
         return medianPricesForAllWeekdays
 
+    def priceFluctuationOnAverageDay(self):
+        """
+
+        """
 
 
 def main():
