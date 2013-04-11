@@ -1,5 +1,6 @@
 import csv
 import sys
+import os
 
 
 class csvFileFixer():
@@ -141,14 +142,111 @@ class csvFileFixer():
         sys.stdout.write("\n")
         return medianPricesForAllWeekdays
 
-    def priceFluctuationOnAverageDay(self):
+    def priceFluctuationOnSameHours(self, document, rowsToMeasureOn, priceRow, toDocument):
+        """
+        """
+        lowMargin = [0] * len(rowsToMeasureOn)
+        highMargin = [0] * len(rowsToMeasureOn)
+        highestPrice = 0
+        lowestPrice = 0
+        prices = []
+
+        with open(toDocument, 'wb') as writeToFile:
+            with open(document, 'rU') as readFromFile:
+                reader = csv.reader(readFromFile, delimiter=self.delimiter)
+                writer = csv.writer(writeToFile, delimiter=self.delimiter)
+                initialized = False
+                theSame = True
+                for row in reader:
+                    if not initialized:
+                        for index in range(len(rowsToMeasureOn)):
+                            lowMargin[index] = float(row[rowsToMeasureOn[index]]) - float(
+                                row[rowsToMeasureOn[index]]) / 50
+                            highMargin[index] = float(row[rowsToMeasureOn[index]]) + float(
+                                row[rowsToMeasureOn[index]]) / 50
+                        #print(lowMargin)
+                        #print(highMargin)
+                        initialized = True
+                    else:
+                        for index in range(len(rowsToMeasureOn)):
+                            if lowMargin[index] < float(row[rowsToMeasureOn[index]]) < highMargin[index]:
+                                theSame = True
+                            else:
+                                theSame = False
+                        if theSame:
+                            prices.append(row[priceRow])
+                        else:
+                            writer.writerow(row)
+
+                        theSame = True
+                    for index in range(len(prices)):
+                        if float(prices[index]) < 80:
+                            prices.pop(index)
+
+        for price in prices:
+            if highestPrice is 0 and lowestPrice is 0:
+                highestPrice = price
+                lowestPrice = price
+            else:
+                if int(round(float(price))) < lowestPrice:
+                    lowestPrice = int(round(float(price)))
+                elif highestPrice < int(round(float(price))):
+                    highestPrice = int(round(float(price)))
+        pricesDistribution = []
+        intervalPrice = lowestPrice
+        while float(intervalPrice) < float(highestPrice):
+            pricesDistribution.append(intervalPrice)
+            intervalPrice += 10
+        numberOfPricesSeen = [0] * len(pricesDistribution)
+        for price in prices:
+            for index in range(len(pricesDistribution)):
+                if float(pricesDistribution[index]) < float(price) < float(pricesDistribution[index] + 10):
+                    numberOfPricesSeen[index] += 1
+        #print(pricesDistribution)
+        #print(numberOfPricesSeen)
+        #print(len(prices))
+        seen = len(prices)
+        return [numberOfPricesSeen, pricesDistribution, seen, lowestPrice, highestPrice]
+
+    def priceDistributionOnAllSimilarDays(self, document, rowsToMeasureOn, priceRow, toDocument):
         """
 
         """
+        timesSeenAndHiAndLow = []
+        stop = False
+        swap = True
+        while not stop:
+            if swap:
+                values = self.priceFluctuationOnSameHours(document, rowsToMeasureOn, priceRow, toDocument)
+                swap = False
+            else:
+                values = self.priceFluctuationOnSameHours(toDocument, rowsToMeasureOn, priceRow, document)
+                swap = True
+            if values[2] > 20:
+                timesSeenAndHiAndLowObject = [values[2], values[4], values[3]]
+                print(timesSeenAndHiAndLowObject)
+                timesSeenAndHiAndLow.append(timesSeenAndHiAndLowObject)
+            if os.stat(document).st_size < 20:
+                stop = True
+
+    def fahrenheitToCelsius(self, document, toFile, rowNumber):
+        with open(toFile, 'wb') as writeToFile:
+            with open(document, 'rU') as readFromFile:
+                reader = csv.reader(readFromFile, delimiter=self.delimiter)
+                writer = csv.writer(writeToFile, delimiter=self.delimiter)
+                skipFirstRow = True
+                for row in reader:
+                    if not skipFirstRow and row[rowNumber] != "-":
+                        sys.stdout.write(row[rowNumber])
+                        sys.stdout.write(str((int(row[rowNumber]) - 32) * 5 / 9))
+                        row[rowNumber] = ((int(row[rowNumber]) - 32) * 5 / 9)
+                        writer.writerow(row)
+                    else:
+                        skipFirstRow = False
 
 
 def main():
-    fixer = csvFileFixer()
+    fixer = csvFileFixer(",")
     filePath = 'DA_EXCEL_FOR_DA_PRICE_FORECAST.csv'
     fileToSaveToPath = 'DA_EXCEL_FOR_DA_PRICE_FORECAST_FIXED.csv'
 
