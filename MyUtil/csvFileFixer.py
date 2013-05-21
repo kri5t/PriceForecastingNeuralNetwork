@@ -533,7 +533,7 @@ def main():
     cleanedDocument = fileName + '_CLEANED.csv'
     correctedData = fileName + '_CORRECTED_DATA.csv'
     zeroToOneFile = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
-                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne.csv")
+                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne_withExtraPrices.csv")
     brian = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
              + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_Brian.csv")
 
