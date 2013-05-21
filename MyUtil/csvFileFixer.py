@@ -360,7 +360,7 @@ class csvFileFixer():
         arrayOfMax = []
         arrayOfMin = []
         arrayOfNormalizedValues = []
-        priceDict = collections.OrderedDict
+        priceDict = collections.OrderedDict()
         print "LENGTH: " + str(len(rowNumber))
         print len(arrayOfNormalizedValues)
         with open(outputDocument, 'wb') as writeToFile:
@@ -376,12 +376,16 @@ class csvFileFixer():
                         if not rowNumber[index] == hourRow:
                             temporaryArray.append(float(row[rowNumber[index]]))
                             if rowNumber[index] == priceRow:
-                                priceDict[line] = float(row[rowNumber[index]])
+                                value = row[rowNumber[index]]
+                                #print "val " + value
+                                #priceDict['line'] = value
+                                priceDict.update({line: value})
                                 line += 1
                         else:
                             temporaryArray.append(row[rowNumber[index]])
                     arrayOfData.append(temporaryArray)
-
+                for something in priceDict:
+                    print priceDict[something]
                 for index in range(len(arrayOfData)):
                     if not rowNumber[index] == hourRow: #and not rowNumber[index] == priceRow:
                         if rowNumber[index] == temperatureRow:
@@ -425,7 +429,6 @@ class csvFileFixer():
                             val = float(arrayOfData[column][row] + constant)
                             #0 to 1:
                             #normalizedValue = ((val - minVal) / (maxVal - minVal))
-                            print "LOLOOLLLOLOLOL"
                             #-1 to 1:
                             normalizedValue = self.normalizeValue(val, maxVal, minVal)
                             if rowNumber[column] == priceRow:
