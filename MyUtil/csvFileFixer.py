@@ -1,14 +1,24 @@
+import collections
 import csv
 import sys
 import os
+import sqlite3
+import numpy as np
+
+from datetime import datetime
 
 
 class csvFileFixer():
     delimiter = ''
+    c = None
+    lastPrice = 0
 
-    def __init__(self, delimiter):
+    def __init__(self, delimiter, useDB):
         """ Init method """
         self.delimiter = delimiter
+        if useDB:
+            conn = sqlite3.connect('csvFiles/database.db')
+            self.c = conn.cursor()
 
     def fixDateFormat(self, filePath, fileToSaveToPath, rowNumberToFix):
         """Hand a file to it and it fixes the format"""
@@ -50,27 +60,31 @@ class csvFileFixer():
     def cleanMinusAndNullInDocumentRow(self, document, toDocument, columns):
         """Removes minus signs and Null values"""
         flag = True
+        written = 0
+        rowsBeforeCleaning = 0
         with open(toDocument, 'wb') as writeToFile:
             with open(document, 'rU') as readFromFile:
                 reader = csv.reader(readFromFile, delimiter=self.delimiter)
                 writer = csv.writer(writeToFile, delimiter=self.delimiter)
-                skipFirstRow = True
+                skipFirstRow = False
                 for row in reader:
                     if skipFirstRow is False:
                         for r in columns:
                             castToInt = str(row[r]).replace(",", ".").replace(" ", "")
-                            if "-" in castToInt or castToInt is "":
+                            if "-" in castToInt or castToInt is "" or int(round(float(castToInt))) == 0:
                                 flag = False
                             else:
                                 row[r] = int(round(float(castToInt)))
                         if flag:
                             writer.writerow(row)
+                            written += 1
                             flag = True
                         else:
                             flag = True
-
                     else:
                         skipFirstRow = False
+                    rowsBeforeCleaning += 1
+        print "Rows cleaned: " + str(rowsBeforeCleaning - written)
 
     def removeToHighAndToLow(self, document, toDocument, columns):
         """
@@ -92,7 +106,7 @@ class csvFileFixer():
                         if value[index] is None:
                             value[index] = int(row[columns[index]])
                         else:
-                            value[index] += int(row[columns[index]])
+                            value[index] += int(round(float(row[columns[index]])))
                         numberOfValues[index] += 1
                 for index in range(len(value)):
                     medians[index] = value[index] / numberOfValues[index]
@@ -100,10 +114,43 @@ class csvFileFixer():
                 reader = csv.reader(readFromFile, delimiter=self.delimiter)
                 for row in reader:
                     for index in range(len(columns)):
-                        if int(medians[index] + medians[index]) > int(row[columns[index]]) > 0:
+                        if int(medians[index] + medians[index]) > int(round(float(row[columns[index]]))) > 0:
                             writer.writerow(row)
                             entriesWritten += 1
         sys.stdout.write(str(entries - entriesWritten) + "\n")
+
+    def removeUsingPercentile(self, document, toDocument, columns):
+        """
+        """
+        maxPercentile = []
+        #print maxPercentile
+        minPercentile = []
+        entries = 0
+        entriesWritten = 0
+        with open(toDocument, 'wb') as writeToFile:
+            with open(document, 'rU') as readFromFile:
+                reader = csv.reader(readFromFile, delimiter=self.delimiter)
+                writer = csv.writer(writeToFile, delimiter=self.delimiter)
+                for index in range(len(columns)):
+                    temporary = []
+                    for row in reader:
+                        temporary.append(float(row[columns[index]]))
+                        #print temporary
+                    maxPercentile.append(np.percentile(temporary, 99))
+                    print np.percentile(temporary, 99)
+                    minPercentile.append(np.percentile(temporary, 1))
+                    print np.percentile(temporary, 1)
+                readFromFile.seek(0)
+                reader = csv.reader(readFromFile, delimiter=self.delimiter)
+                for row in reader:
+                    entries += 1
+                    for index in range(len(columns)):
+                        #print "max: " + str(maxPercentile) + " mid: " + str(
+                        #    int(round(float(row[columns[index]])))) + "min: " + str(minPercentile)
+                        if maxPercentile[0] > int(round(float(row[columns[index]]))) > minPercentile[0]:
+                            writer.writerow(row)
+                            entriesWritten += 1
+        sys.stdout.write("Percentile removal: " + str(entries - entriesWritten) + "\n")
 
     def twoRowsToOneFile(self, document, toFile, row1, row2):
         """
@@ -137,9 +184,9 @@ class csvFileFixer():
                         weekdaysCombined[index] += float(row[priceRow])
         for index in range(len(numberOfWeekdays)):
             medianPricesForAllWeekdays[index] = weekdaysCombined[index] / numberOfWeekdays[index]
-            sys.stdout.write("median: " + str(medianPricesForAllWeekdays[index]) + "  sumOfPrice: " + str(
-                weekdaysCombined[index]) + "  numberOfTimes: " + str(numberOfWeekdays[index]) + "\n")
-        sys.stdout.write("\n")
+            #sys.stdout.write("median: " + str(medianPricesForAllWeekdays[index]) + "  sumOfPrice: " + str(
+            #weekdaysCombined[index]) + "  numberOfTimes: " + str(numberOfWeekdays[index]) + "\n")
+        #sys.stdout.write("\n")
         return medianPricesForAllWeekdays
 
     def priceFluctuationOnSameHours(self, document, rowsToMeasureOn, priceRow, toDocument):
@@ -150,6 +197,7 @@ class csvFileFixer():
         highestPrice = 0
         lowestPrice = 0
         prices = []
+        dato = None
 
         with open(toDocument, 'wb') as writeToFile:
             with open(document, 'rU') as readFromFile:
@@ -164,9 +212,8 @@ class csvFileFixer():
                                 row[rowsToMeasureOn[index]]) / 50
                             highMargin[index] = float(row[rowsToMeasureOn[index]]) + float(
                                 row[rowsToMeasureOn[index]]) / 50
-                        #print(lowMargin)
-                        #print(highMargin)
                         initialized = True
+                        dato = row[0]
                     else:
                         for index in range(len(rowsToMeasureOn)):
                             if lowMargin[index] < float(row[rowsToMeasureOn[index]]) < highMargin[index]:
@@ -202,11 +249,10 @@ class csvFileFixer():
             for index in range(len(pricesDistribution)):
                 if float(pricesDistribution[index]) < float(price) < float(pricesDistribution[index] + 10):
                     numberOfPricesSeen[index] += 1
-        #print(pricesDistribution)
-        #print(numberOfPricesSeen)
-        #print(len(prices))
         seen = len(prices)
-        return [numberOfPricesSeen, pricesDistribution, seen, lowestPrice, highestPrice]
+        print(highMargin)
+        print(lowMargin)
+        return [numberOfPricesSeen, pricesDistribution, seen, lowestPrice, highestPrice, dato]
 
     def priceDistributionOnAllSimilarDays(self, document, rowsToMeasureOn, priceRow, toDocument):
         """
@@ -223,13 +269,21 @@ class csvFileFixer():
                 values = self.priceFluctuationOnSameHours(toDocument, rowsToMeasureOn, priceRow, document)
                 swap = True
             if values[2] > 20:
-                timesSeenAndHiAndLowObject = [values[2], values[4], values[3]]
-                print(timesSeenAndHiAndLowObject)
+                #timesSeenAndHiAndLowObject = [values[2], int(values[4]), int(values[4]), values[3], values[3]]
+                timesSeenAndHiAndLowObject = [datetime.strptime(values[5], "%m/%d/%y"), int(values[4]), int(values[4]),
+                                              int(values[3]), int(values[3])]
+                #print(timesSeenAndHiAndLowObject)
                 timesSeenAndHiAndLow.append(timesSeenAndHiAndLowObject)
             if os.stat(document).st_size < 20:
                 stop = True
+        print(timesSeenAndHiAndLow)
+        return timesSeenAndHiAndLow
 
     def fahrenheitToCelsius(self, document, toFile, rowNumber):
+        """
+        Converts fahrenheit to celsius in the given row.
+        Takes a csv-file to read from and writes to a new file.
+        """
         with open(toFile, 'wb') as writeToFile:
             with open(document, 'rU') as readFromFile:
                 reader = csv.reader(readFromFile, delimiter=self.delimiter)
@@ -237,21 +291,251 @@ class csvFileFixer():
                 skipFirstRow = True
                 for row in reader:
                     if not skipFirstRow and row[rowNumber] != "-":
-                        sys.stdout.write(row[rowNumber])
-                        sys.stdout.write(str((int(row[rowNumber]) - 32) * 5 / 9))
-                        row[rowNumber] = ((int(row[rowNumber]) - 32) * 5 / 9)
+                        row[rowNumber] = int(round((float(row[rowNumber]) - 32.0) * 5.0 / 9.0))
                         writer.writerow(row)
                     else:
                         skipFirstRow = False
 
+    def fahrenheitToKelvin(self, document, toFile, rowNumber):
+        """
+        Converts fahrenheit to celsius in the given row.
+        Takes a csv-file to read from and writes to a new file.
+        """
+        with open(toFile, 'wb') as writeToFile:
+            with open(document, 'rU') as readFromFile:
+                reader = csv.reader(readFromFile, delimiter=self.delimiter)
+                writer = csv.writer(writeToFile, delimiter=self.delimiter)
+                skipFirstRow = True
+                for row in reader:
+                    if not skipFirstRow and row[rowNumber] != "-":
+                        #print row[rowNumber]
+                        #print ((float(row[rowNumber]) - 32.0) * (5.0 / 9.0)) + 273.0
+                        row[rowNumber] = ((float(row[rowNumber]) - 32.0) * (5.0 / 9.0)) + 273.0
+                        writer.writerow(row)
+                    else:
+                        skipFirstRow = False
+
+    def normalizeZeroToOne(self, inputDocument, outputDocument, rowNumber):
+        """
+        Returns an array that contains a normalization of the 4 input types:
+        consumption, wind speed, temperature, price
+
+        Temperature is converted to kelvin to always get a positive number.
+        """
+        tableName = "startMajData"
+        rowsToNormalize = ("consumption", "windSpeed", "temperature", "price")
+        arrayOfNormalizedValues = []
+        print len(arrayOfNormalizedValues)
+        for index in range(len(rowsToNormalize)):
+            if rowsToNormalize[index] == "temperature":
+                constant = 273.15
+            else:
+                constant = 0
+            maxValue = int(
+                self.c.execute("SELECT MAX(" + rowsToNormalize[index] + ") FROM " + tableName).fetchone()[0]) + constant
+            minValue = int(
+                self.c.execute("SELECT MIN(" + rowsToNormalize[index] + ") FROM " + tableName).fetchone()[0]) + constant
+            array = []
+            print rowsToNormalize[index] + " maxValue: " + str(maxValue)
+            print rowsToNormalize[index] + " minValue: " + str(minValue)
+            for row in self.c.execute("SELECT " + rowsToNormalize[index] + " FROM " + tableName):
+                normalizedValue = (
+                    float(float(row[0] + constant) - float(minValue)) / float(float(maxValue) - float(minValue)))
+                array.append(normalizedValue)
+            arrayOfNormalizedValues.append(array)
+        print arrayOfNormalizedValues
+        print len(arrayOfNormalizedValues)
+        return arrayOfNormalizedValues
+        #self.c.execute("DROP TABLE dataKristianNormalized")
+
+    def normalizeZeroToOneUsingCSV(self, inputDocument, outputDocument, rowNumber, temperatureRow, hourRow
+                                   , useLastDaysPrice, priceRow):
+        """
+        Returns an array that contains a normalization of the 4 input types:
+        consumption, wind speed, temperature, price
+
+        Temperature is converted to kelvin to always get a positive number.
+        """
+        arrayOfData = []
+        arrayOfMax = []
+        arrayOfMin = []
+        arrayOfNormalizedValues = []
+        priceDict = collections.OrderedDict
+        print "LENGTH: " + str(len(rowNumber))
+        print len(arrayOfNormalizedValues)
+        with open(outputDocument, 'wb') as writeToFile:
+            with open(inputDocument, 'rU') as readFromFile:
+                reader = csv.reader(readFromFile, delimiter=self.delimiter)
+                writer = csv.writer(writeToFile, delimiter=self.delimiter)
+
+                for index in range(len(rowNumber)):
+                    temporaryArray = []
+                    readFromFile.seek(0)
+                    line = 0
+                    for row in reader:
+                        if not rowNumber[index] == hourRow:
+                            temporaryArray.append(float(row[rowNumber[index]]))
+                            if rowNumber[index] == priceRow:
+                                priceDict[line] = float(row[rowNumber[index]])
+                                line += 1
+                        else:
+                            temporaryArray.append(row[rowNumber[index]])
+                    arrayOfData.append(temporaryArray)
+
+                for index in range(len(arrayOfData)):
+                    if not rowNumber[index] == hourRow: #and not rowNumber[index] == priceRow:
+                        if rowNumber[index] == temperatureRow:
+                            constant = 273.15
+                        else:
+                            constant = 0
+                        arrayOfMax.append(max(arrayOfData[index]) + constant)
+                        arrayOfMin.append(min(arrayOfData[index]) + constant)
+                    #elif rowNumber[index] == priceRow:
+                    #    arrayOfMax.append(1560.99)
+                    #    arrayOfMin.append(-14.84)
+                    else:
+                        arrayOfMax.append(0)
+                        arrayOfMin.append(0)
+                        #print arrayOfMin
+                    #print arrayOfMax
+                print arrayOfMax
+                print arrayOfMin
+                for row in range(len(arrayOfData[0])):
+                    rowToWrite = []
+                    for column in range(len(arrayOfData)):
+                        maxVal = float(arrayOfMax[column])
+                        minVal = float(arrayOfMin[column])
+                        if rowNumber[column] == temperatureRow:
+                            constant = 273.15
+                            #print arrayOfData[column][row]
+                        else:
+                            constant = 0.0
+
+                        if rowNumber[column] == priceRow and useLastDaysPrice:
+                            if self.lastPrice == 0:
+                                self.lastPrice = self.normalizeValue(float(arrayOfData[column][row]), maxVal, minVal)
+                            rowToWrite.append(self.lastPrice)
+
+                        if rowNumber[column] == hourRow:
+                            #print self.normalizeHourToArray(arrayOfData[column][row])
+                            for hour in self.normalizeHourToArray(arrayOfData[column][row]):
+                                rowToWrite.append(hour)
+                                #print hour
+                        else:
+                            val = float(arrayOfData[column][row] + constant)
+                            #0 to 1:
+                            #normalizedValue = ((val - minVal) / (maxVal - minVal))
+                            print "LOLOOLLLOLOLOL"
+                            #-1 to 1:
+                            normalizedValue = self.normalizeValue(val, maxVal, minVal)
+                            if rowNumber[column] == priceRow:
+                                self.lastPrice = normalizedValue
+                            rowToWrite.append(normalizedValue)
+                            #print rowToWrite
+
+                    writer.writerow(rowToWrite)
+
+    def normalizeValue(self, val, maxVal, minVal):
+        return (val - ((maxVal + minVal) / 2)) / ((maxVal - minVal) / 2)
+        #return val
+
+    def normalizeHour(self, hour):
+        value = {'00-01': 0,
+                 '01-02': 1,
+                 '02-03': 2,
+                 '03-04': 3,
+                 '04-05': 4,
+                 '05-06': 5,
+                 '06-07': 6,
+                 '07-08': 7,
+                 '08-09': 8,
+                 '09-10': 9,
+                 '10-11': 10,
+                 '11-12': 11,
+                 '12-13': 12,
+                 '13-14': 13,
+                 '14-15': 14,
+                 '15-16': 15,
+                 '16-17': 16,
+                 '17-18': 17,
+                 '18-19': 18,
+                 '19-20': 19,
+                 '20-21': 20,
+                 '21-22': 21,
+                 '22-23': 22,
+                 '23-00': 23}.get(hour, 0)
+        #return float(float(value) / 23.0)
+        return [float(value - float(23.0 / 2.0)) / float(23.0 / 2.0)]
+
+    def normalizeHourToArray(self, hour):
+        value = {'00-01': [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '01-02': [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '02-03': [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '03-04': [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '04-05': [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '05-06': [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '06-07': [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '07-08': [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '08-09': [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '09-10': [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '10-11': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '11-12': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '12-13': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '13-14': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '14-15': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '15-16': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                 '16-17': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                 '17-18': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                 '18-19': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                 '19-20': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                 '20-21': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                 '21-22': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                 '22-23': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                 '23-00': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        }.get(hour, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        return value
+        #return float(float(value) / 23.0)
+        #return float(value - float(23.0 / 2.0)) / float(23.0 / 2.0)
+
 
 def main():
-    fixer = csvFileFixer(",")
-    filePath = 'DA_EXCEL_FOR_DA_PRICE_FORECAST.csv'
-    fileToSaveToPath = 'DA_EXCEL_FOR_DA_PRICE_FORECAST_FIXED.csv'
+    fixer = csvFileFixer(",", False)
 
-    fixer.fixDateFormat(filePath, fileToSaveToPath, 0)
-    fixer.printCsvDocument('DA_EXCEL_FOR_DA_PRICE_FORECAST_FIXED.csv')
+    priceRow = 5
+    consumptionRow = 2
+    temperatureRow = 4
+    windSpeedRow = 3
+    weekdaysRow = 10
+    timeOfDayRow = 1
+    windDirection = 8
+    windProduction = 6
+    pressure = 7
+
+    fileName = '../csvFiles/YEAR_2011_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_06-05-2013'
+    filePath = fileName + '.csv'
+    toKelvin = fileName + '_kelvin.csv'
+    cleanedDocument = fileName + '_CLEANED.csv'
+    correctedData = fileName + '_CORRECTED_DATA.csv'
+    zeroToOneFile = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
+                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne.csv")
+    brian = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
+             + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_Brian.csv")
+
+    #fixer.printCsvDocument(filePath)
+
+    fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow])
+    fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
+    fixer.fahrenheitToKelvin(correctedData, toKelvin, temperatureRow)
+    fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
+                                     [consumptionRow, windSpeedRow, timeOfDayRow, priceRow],
+                                     temperatureRow, timeOfDayRow, True, priceRow)
+
+    #fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow, pressure])
+    #fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
+    #fixer.removeUsingPercentile(toKelvin, correctedData, [windProduction])
+    #fixer.normalizeZeroToOneUsingCSV(correctedData, brian,
+    #                                 [consumptionRow, windSpeedRow, timeOfDayRow, temperatureRow, pressure,
+    #                                  windProduction], temperatureRow, timeOfDayRow, False, priceRow)
 
 
 if __name__ == '__main__':
