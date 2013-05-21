@@ -377,8 +377,6 @@ class csvFileFixer():
                             temporaryArray.append(float(row[rowNumber[index]]))
                             if rowNumber[index] == priceRow:
                                 value = row[rowNumber[index]]
-                                #print "val " + value
-                                #priceDict['line'] = value
                                 priceDict.update({line: value})
                                 line += 1
                         else:
@@ -414,11 +412,26 @@ class csvFileFixer():
                             #print arrayOfData[column][row]
                         else:
                             constant = 0.0
-
                         if rowNumber[column] == priceRow and useLastDaysPrice:
                             if self.lastPrice == 0:
                                 self.lastPrice = self.normalizeValue(float(arrayOfData[column][row]), maxVal, minVal)
-                            rowToWrite.append(self.lastPrice)
+
+                            if row > (28 * 24):
+                                rowToWrite.append(self.normalizeValue(float(priceDict[row - (7 * 24)]), maxVal, minVal))
+                                rowToWrite.append(self.normalizeValue(float(priceDict[row - (7 * 24)]), maxVal, minVal))
+                                rowToWrite.append(self.normalizeValue(float(priceDict[row - (7 * 24)]), maxVal, minVal))
+                                rowToWrite.append(self.normalizeValue(float(priceDict[row - (14 * 24)]), maxVal, minVal))
+                                rowToWrite.append(self.normalizeValue(float(priceDict[row - (21 * 24)]), maxVal, minVal))
+                                rowToWrite.append(self.normalizeValue(float(priceDict[row - (28 * 24)]), maxVal, minVal))
+                                rowToWrite.append(self.normalizeValue(float(priceDict[row - 24]), maxVal, minVal))
+                                rowToWrite.append(self.normalizeValue(float(priceDict[row - 24]), maxVal, minVal))
+                                rowToWrite.append(self.normalizeValue(float(priceDict[row - 24]), maxVal, minVal))
+                                rowToWrite.append(self.normalizeValue(float(priceDict[row - 1]), maxVal, minVal))
+                            else:
+                                for i in range(0, 9, 1):
+                                    rowToWrite.append(0)
+
+                            #rowToWrite.append(self.lastPrice)
 
                         if rowNumber[column] == hourRow:
                             #print self.normalizeHourToArray(arrayOfData[column][row])
@@ -435,8 +448,8 @@ class csvFileFixer():
                                 self.lastPrice = normalizedValue
                             rowToWrite.append(normalizedValue)
                             #print rowToWrite
-
-                    writer.writerow(rowToWrite)
+                    if row > (28 * 24):
+                        writer.writerow(rowToWrite)
 
     def normalizeValue(self, val, maxVal, minVal):
         return (val - ((maxVal + minVal) / 2)) / ((maxVal - minVal) / 2)
