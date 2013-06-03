@@ -128,7 +128,7 @@ def main():
     correctedData = fileName + '_CORRECTED_DATA.csv'
     swapFile = fileName + '_SWAP_FILE.csv'
 
-    fileFixer = csvFileFixer(",")
+    fileFixer = csvFileFixer(",", False)
     gp = graphPlotter(",")
     #fileFixer.fixDateFormat(filePath, document, 0)
     startTime = time()

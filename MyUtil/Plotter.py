@@ -23,6 +23,7 @@ class Plotter():
         onlyFiles = [f for f in listdir(pathName) if isfile(join(pathName, f))]
 
         for fileName in onlyFiles:
+            if "PREDIC" not in fileName: continue
             name = pathName + fileName
             print "fileName: ", name
 
@@ -75,7 +76,7 @@ class Plotter():
         print "BEST MPE : ", bestMpe
         print "In file: ", bestMpeFileName
 
-    def printIdealActualOutputPlot(self, fileName):
+    def printIdealActualOutputPlot(self, fileName, pdfName):
         actualProduction = []
         idealProduction = []
         lengthArray = []
@@ -104,15 +105,18 @@ class Plotter():
         newax.yaxis.set_label_position('right')
         newax.yaxis.set_ticks_position('right')
 
-        p1, = ax.plot(lengthArray, actualProduction, marker='s', linestyle='-', color="red",
+        #p1, = ax.plot(lengthArray, actualProduction, marker='s', linestyle='-', color="red",
+        p1, = ax.plot(lengthArray, actualProduction, marker='o', markersize=3, linestyle='-', color="red",
                       label="Predicted Price")
         # ax.set_ylim(85,115)
         #   ax.set_xlim(1, 12)
         ax.set_xlabel('2012 Hours', color='blue')
         ax.set_ylabel('Price', color='red')
 
-        p2, = newax.plot(lengthArray, idealProduction, marker='^', linestyle='-', color="green",
+        #p2, = newax.plot(lengthArray, idealProduction, marker='^', linestyle='-', color="green",
+        p2, = newax.plot(lengthArray, idealProduction, marker='o', markersize=3, linestyle='-', color="green",
                          label="Actual Price")
+
         # newax.set_xlim(1, 12)
         #  newax.set_ylim(-10,25)
 
@@ -125,7 +129,7 @@ class Plotter():
         newax.set_ylabel('Price', color='green')
 
         pp = PdfPages(
-            '../csvFiles/PlotGraphIdealAndActual.pdf')
+            '../csvFiles/' + pdfName + '.pdf')
         pp.savefig(fig)
         pp.close()
 
@@ -134,9 +138,12 @@ def main():
     pathName = "../csvFiles/FilesToPlot/"
     printer = Plotter()
     printer.printIdealActualOutput(pathName)
-    fileName = pathName + "PricesSet_PREDICT1369241148153.csv"
     #fileName = pathName + "StandardSet_PREDICT1369168828979.csv"
-    printer.printIdealActualOutputPlot(fileName)
+    onlyFiles = [f for f in listdir(pathName) if isfile(join(pathName, f))]
+    for filename in onlyFiles:
+        if "PREDIC" in filename:
+            printer.printIdealActualOutputPlot(pathName + filename, filename)
+
 
 if __name__ == '__main__':
     main()
