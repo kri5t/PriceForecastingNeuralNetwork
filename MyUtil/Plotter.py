@@ -89,7 +89,7 @@ class Plotter():
             for row in dat:
                 if not "TOTAL" in row[0]:
                     actualProduction.append(int(float(row[0])))
-                    idealProduction.append(int(float(row[1])))
+                    #idealProduction.append(int(float(row[1])))
                     i += 1
                     lengthArray.append(i)
                     if i > 1500:
@@ -114,14 +114,14 @@ class Plotter():
         ax.set_ylabel('Price', color='red')
 
         #p2, = newax.plot(lengthArray, idealProduction, marker='^', linestyle='-', color="green",
-        p2, = newax.plot(lengthArray, idealProduction, marker='o', markersize=3, linestyle='-', color="green",
-                         label="Actual Price")
+        #p2, = newax.plot(lengthArray, idealProduction, marker='o', markersize=3, linestyle='-', color="green",
+        #                 label="Actual Price")
 
         # newax.set_xlim(1, 12)
         #  newax.set_ylim(-10,25)
 
-        lines = [p1, p2]
-        #lines = [p1]
+        #lines = [p1, p2]
+        lines = [p1]
 
         ax.legend(lines, [l.get_label() for l in lines])
 
@@ -129,7 +129,8 @@ class Plotter():
         newax.set_ylabel('Price', color='green')
 
         pp = PdfPages(
-            '../csvFiles/' + pdfName + '.pdf')
+            '../csvFiles/LOL.pdf')
+            #'../csvFiles/' + pdfName + '.pdf')
         pp.savefig(fig)
         pp.close()
 
