@@ -137,11 +137,12 @@ class Plotter():
 def main():
     pathName = "../csvFiles/FilesToPlot/"
     printer = Plotter()
-    printer.printIdealActualOutput(pathName)
+    #printer.printIdealActualOutput(pathName)
     #fileName = pathName + "StandardSet_PREDICT1369168828979.csv"
     onlyFiles = [f for f in listdir(pathName) if isfile(join(pathName, f))]
     for filename in onlyFiles:
-        if "PREDIC" in filename:
+        if "2011_2012" in filename:
+            print "ok"
             printer.printIdealActualOutputPlot(pathName + filename, filename)
 
 
