@@ -136,10 +136,10 @@ class csvFileFixer():
                     for row in reader:
                         temporary.append(float(row[columns[index]]))
                         #print temporary
-                    maxPercentile.append(np.percentile(temporary, 99))
-                    print np.percentile(temporary, 99)
-                    minPercentile.append(np.percentile(temporary, 1))
-                    print np.percentile(temporary, 1)
+                    maxPercentile.append(np.percentile(temporary, 95))
+                    print np.percentile(temporary, 95)
+                    minPercentile.append(np.percentile(temporary, 5))
+                    print np.percentile(temporary, 5)
                 readFromFile.seek(0)
                 reader = csv.reader(readFromFile, delimiter=self.delimiter)
                 for row in reader:
@@ -519,7 +519,7 @@ class csvFileFixer():
                  '21-22': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
                  '22-23': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
                  '23-00': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
-        }.get(hour, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+              }.get(hour, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         return value
         #return float(float(value) / 23.0)
         #return float(value - float(23.0 / 2.0)) / float(23.0 / 2.0)
@@ -544,7 +544,7 @@ def main():
     cleanedDocument = fileName + '_CLEANED.csv'
     correctedData = fileName + '_CORRECTED_DATA.csv'
     zeroToOneFile = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
-                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne_withPaperPrices.csv")
+                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne_withPaperPrices_5pTrim.csv")
     brian = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
              + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_Brian.csv")
 

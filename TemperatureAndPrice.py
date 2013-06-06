@@ -119,7 +119,7 @@ def candleStickGraph(inputData):
 
 
 def main():
-    fileName = 'csvFiles/PRICE_CONSUMPTION_WEATHER_COMBI'
+    fileName = 'csvFiles/YEAR_2011_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_06-05-2013'
     originalFile = fileName + '.csv'
     filePath = fileName + 'CELSIUS.csv'
     #document = fileName + '_FIXED.csv'
@@ -137,7 +137,7 @@ def main():
     #Price vs Temperature
     fileFixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [2])
     fileFixer.twoRowsToOneFile(cleanedDocument, twoRows, 2, 4)
-    fileFixer.removeToHighAndToLow(twoRows, correctedData, [0])
+    fileFixer.removeUsingPercentile(twoRows, correctedData, [0])
     gp.plot(correctedData, 1, "Price", 0, "Temperature")
 
     #Print the document:
@@ -146,14 +146,14 @@ def main():
     #Price vs Wind speed
     fileFixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [3, 2])
     fileFixer.twoRowsToOneFile(cleanedDocument, twoRows, 3, 2)
-    fileFixer.removeToHighAndToLow(twoRows, correctedData, [1])
+    fileFixer.removeUsingPercentile(twoRows, correctedData, [1])
     gp.plot(correctedData, 0, "Wind speed", 1, "Price")
 
     #Price vs Consumption
     #fileFixer.fixDateFormat(filePath1, document1, 0)
     fileFixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [2, 5])
     fileFixer.twoRowsToOneFile(cleanedDocument, twoRows, 2, 5)
-    fileFixer.removeToHighAndToLow(twoRows, correctedData, [0])
+    fileFixer.removeUsingPercentile(twoRows, correctedData, [0])
     gp.plot(correctedData, 0, "Price", 1, "Consumption")
 
     #Temperature vs Consumption
@@ -181,8 +181,8 @@ def main():
     barPlotTime(fileFixer.concatenateEntriesAndGiveAverage(cleanedDocument, 1, 2, timesOfDay))
 
     fileFixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [2, 3, 5])
-    labelAndValues = fileFixer.priceFluctuationOnSameHours(cleanedDocument, [3, 4, 5], 2, swapFile)
-    barPlotPrices(labelAndValues[0], labelAndValues[1])
+    #labelAndValues = fileFixer.priceFluctuationOnSameHours(cleanedDocument, [3, 4, 5], 2, swapFile)
+    #barPlotPrices(labelAndValues[0], labelAndValues[1])
 
     fileFixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [2, 3, 5])
     fileFixer.priceDistributionOnAllSimilarDays(cleanedDocument, [3, 4, 5], 2, swapFile)
