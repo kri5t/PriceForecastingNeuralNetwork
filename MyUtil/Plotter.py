@@ -99,6 +99,9 @@ class Plotter():
         fig.set_size_inches(20, 10)
         fig.subplots_adjust(bottom=0.2, right=0.95)
 
+        plt.axhline(61, 0, 1600)
+        plt.axhline(632, 0, 1600)
+
         newax = fig.add_axes(ax.get_position())
         newax.patch.set_visible(False)
 
@@ -142,7 +145,7 @@ def main():
     #fileName = pathName + "StandardSet_PREDICT1369168828979.csv"
     onlyFiles = [f for f in listdir(pathName) if isfile(join(pathName, f))]
     for filename in onlyFiles:
-        if "2011_2012" in filename:
+        if "2012" in filename:
             print "ok"
             printer.printIdealActualOutputPlot(pathName + filename, filename)
 
