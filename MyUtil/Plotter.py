@@ -89,7 +89,7 @@ class Plotter():
             for row in dat:
                 if not "TOTAL" in row[0]:
                     actualProduction.append(int(float(row[0])))
-                    #idealProduction.append(int(float(row[1])))
+                    idealProduction.append(int(float(row[1])))
                     i += 1
                     lengthArray.append(i)
                     if i > 1500:
@@ -99,14 +99,15 @@ class Plotter():
         fig.set_size_inches(20, 10)
         fig.subplots_adjust(bottom=0.2, right=0.95)
 
-        plt.axhline(61, 0, 1600)
-        plt.axhline(632, 0, 1600)
+        #plt.axhline(61, 0, 1600)
+        #plt.axhline(632, 0, 1600)
 
         newax = fig.add_axes(ax.get_position())
         newax.patch.set_visible(False)
-
-        newax.yaxis.set_label_position('right')
-        newax.yaxis.set_ticks_position('right')
+        #newax.ticks.set_visible(False)
+        #newax.label.set_visible(False)
+        #newax.yaxis.set_label_position('right')
+        #newax.yaxis.set_ticks_position('right')
 
         #p1, = ax.plot(lengthArray, actualProduction, marker='s', linestyle='-', color="red",
         p1, = ax.plot(lengthArray, actualProduction, marker='o', markersize=3, linestyle='-', color="red",
@@ -117,23 +118,24 @@ class Plotter():
         ax.set_ylabel('Price', color='red')
 
         #p2, = newax.plot(lengthArray, idealProduction, marker='^', linestyle='-', color="green",
-        #p2, = newax.plot(lengthArray, idealProduction, marker='o', markersize=3, linestyle='-', color="green",
-        #                 label="Actual Price")
+        p2, = newax.plot(lengthArray, idealProduction, marker='o', markersize=3, linestyle='-', color="green",
+                         label="Actual Price")
 
         # newax.set_xlim(1, 12)
         #  newax.set_ylim(-10,25)
 
-        #lines = [p1, p2]
-        lines = [p1]
+        #
+        lines = [p1, p2]
+        #lines = [p1]
 
         ax.legend(lines, [l.get_label() for l in lines])
 
         #newax.set_xlabel('Green X-axis', color='green')
-        newax.set_ylabel('Price', color='green')
+        #newax.set_ylabel('Price', color='green')
 
         pp = PdfPages(
-            '../csvFiles/LOL.pdf')
-            #'../csvFiles/' + pdfName + '.pdf')
+            #'../csvFiles/LOL.pdf')
+            '../csvFiles/' + pdfName + '.pdf')
         pp.savefig(fig)
         pp.close()
 
@@ -145,7 +147,7 @@ def main():
     #fileName = pathName + "StandardSet_PREDICT1369168828979.csv"
     onlyFiles = [f for f in listdir(pathName) if isfile(join(pathName, f))]
     for filename in onlyFiles:
-        if "2012" in filename:
+        if "PREDICT" in filename:
             print "ok"
             printer.printIdealActualOutputPlot(pathName + filename, filename)
 
