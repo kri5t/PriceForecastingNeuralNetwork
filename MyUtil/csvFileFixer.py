@@ -544,7 +544,7 @@ def main():
     cleanedDocument = fileName + '_CLEANED.csv'
     correctedData = fileName + '_CORRECTED_DATA.csv'
     zeroToOneFile = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
-                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne_withPaperPrices_5pTrim.csv")
+                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne_withPaperPrices_NOTrim.csv")
     brian = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
              + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_Brian.csv")
 
@@ -552,7 +552,7 @@ def main():
 
     fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow])
     fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
-    fixer.fahrenheitToKelvin(correctedData, toKelvin, temperatureRow)
+    fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
     fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
                                      [consumptionRow, windSpeedRow, timeOfDayRow, priceRow],
                                      temperatureRow, timeOfDayRow, True, priceRow)

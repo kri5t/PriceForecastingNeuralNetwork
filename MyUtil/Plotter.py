@@ -80,7 +80,8 @@ class Plotter():
         actualProduction = []
         idealProduction = []
         lengthArray = []
-
+        lowest = 99999
+        highest = 0
         with open(fileName, 'rb') as csvfile:
             dat = csv.reader(csvfile, delimiter=',')
             headers = dat.next()
@@ -90,24 +91,34 @@ class Plotter():
                 if not "TOTAL" in row[0]:
                     actualProduction.append(int(float(row[0])))
                     idealProduction.append(int(float(row[1])))
+                    if int(float(row[0])) < lowest:
+                        lowest = int(float(row[0]))
+                    if int(float(row[0])) > highest:
+                        highest = int(float(row[0]))
+                    if int(float(row[1])) < lowest:
+                        lowest = int(float(row[1]))
+                    if int(float(row[1])) > highest:
+                        highest = int(float(row[1]))
+
                     i += 1
                     lengthArray.append(i)
-                    if i > 1500:
-                        break
+                    #if i > 1500:
+                    #    break
 
         fig, ax = plt.subplots()
         fig.set_size_inches(20, 10)
         fig.subplots_adjust(bottom=0.2, right=0.95)
 
-        #plt.axhline(61, 0, 1600)
-        #plt.axhline(632, 0, 1600)
+        plt.axhline(61, 0, 1600)
+        plt.axhline(632, 0, 1600)
 
         newax = fig.add_axes(ax.get_position())
         newax.patch.set_visible(False)
+        #newax.set_ticks([])
         #newax.ticks.set_visible(False)
         #newax.label.set_visible(False)
-        #newax.yaxis.set_label_position('right')
-        #newax.yaxis.set_ticks_position('right')
+        newax.yaxis.set_label_position('right')
+        newax.yaxis.set_ticks_position('right')
 
         #p1, = ax.plot(lengthArray, actualProduction, marker='s', linestyle='-', color="red",
         p1, = ax.plot(lengthArray, actualProduction, marker='o', markersize=3, linestyle='-', color="red",
@@ -116,6 +127,8 @@ class Plotter():
         #   ax.set_xlim(1, 12)
         ax.set_xlabel('2012 Hours', color='blue')
         ax.set_ylabel('Price', color='red')
+
+
 
         #p2, = newax.plot(lengthArray, idealProduction, marker='^', linestyle='-', color="green",
         p2, = newax.plot(lengthArray, idealProduction, marker='o', markersize=3, linestyle='-', color="green",
@@ -129,7 +142,8 @@ class Plotter():
         #lines = [p1]
 
         ax.legend(lines, [l.get_label() for l in lines])
-
+        newax.set_ylim([lowest - 10, highest + 10])
+        ax.set_ylim([lowest - 10, highest + 10])
         #newax.set_xlabel('Green X-axis', color='green')
         #newax.set_ylabel('Price', color='green')
 
@@ -147,7 +161,7 @@ def main():
     #fileName = pathName + "StandardSet_PREDICT1369168828979.csv"
     onlyFiles = [f for f in listdir(pathName) if isfile(join(pathName, f))]
     for filename in onlyFiles:
-        if "PREDICT" in filename:
+        if "2012" in filename:
             print "ok"
             printer.printIdealActualOutputPlot(pathName + filename, filename)
 
