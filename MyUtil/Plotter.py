@@ -82,6 +82,7 @@ class Plotter():
         lengthArray = []
         lowest = 99999
         highest = 0
+        numberOfEntries = 1000
         with open(fileName, 'rb') as csvfile:
             dat = csv.reader(csvfile, delimiter=',')
             headers = dat.next()
@@ -102,15 +103,15 @@ class Plotter():
 
                     i += 1
                     lengthArray.append(i)
-                    #if i > 1500:
-                    #    break
+                    if i > numberOfEntries:
+                        break
 
         fig, ax = plt.subplots()
         fig.set_size_inches(20, 10)
         fig.subplots_adjust(bottom=0.2, right=0.95)
 
-        plt.axhline(61, 0, 1600)
-        plt.axhline(632, 0, 1600)
+        #plt.axhline(61, 0, 1600)
+        #plt.axhline(632, 0, 1600)
 
         newax = fig.add_axes(ax.get_position())
         newax.patch.set_visible(False)
@@ -127,7 +128,8 @@ class Plotter():
         #   ax.set_xlim(1, 12)
         ax.set_xlabel('2012 Hours', color='blue')
         ax.set_ylabel('Price', color='red')
-
+        ax.set_xlim(0, numberOfEntries)
+        newax.set_xlim(0, numberOfEntries)
 
 
         #p2, = newax.plot(lengthArray, idealProduction, marker='^', linestyle='-', color="green",
@@ -161,8 +163,8 @@ def main():
     #fileName = pathName + "StandardSet_PREDICT1369168828979.csv"
     onlyFiles = [f for f in listdir(pathName) if isfile(join(pathName, f))]
     for filename in onlyFiles:
-        if "2012" in filename:
-            print "ok"
+        if "24HOUR" in filename:
+            #print "ok"
             printer.printIdealActualOutputPlot(pathName + filename, filename)
 
 
