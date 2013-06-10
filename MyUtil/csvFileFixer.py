@@ -136,10 +136,10 @@ class csvFileFixer():
                     for row in reader:
                         temporary.append(float(row[columns[index]]))
                         #print temporary
-                    maxPercentile.append(np.percentile(temporary, 95))
-                    print np.percentile(temporary, 95)
-                    minPercentile.append(np.percentile(temporary, 5))
-                    print np.percentile(temporary, 5)
+                    maxPercentile.append(np.percentile(temporary, 99))
+                    print "MaxPercentile: " + str(np.percentile(temporary, 99))
+                    minPercentile.append(np.percentile(temporary, 1))
+                    print "MinPercentile: " + str(np.percentile(temporary, 1))
                 readFromFile.seek(0)
                 reader = csv.reader(readFromFile, delimiter=self.delimiter)
                 for row in reader:
@@ -348,7 +348,7 @@ class csvFileFixer():
         return arrayOfNormalizedValues
         #self.c.execute("DROP TABLE dataKristianNormalized")
 
-    def normalizeZeroToOneUsingCSV(self, inputDocument, outputDocument, rowNumber, temperatureRow, hourRow
+    def normalizeZeroToOneUsingCSV(self, inputDocument, outputDocument, rowNumber, temperatureRow, hourRow, weekdaysRow
                                    , useLastDaysPrice, priceRow):
         """
         Returns an array that contains a normalization of the 4 input types:
@@ -356,6 +356,7 @@ class csvFileFixer():
 
         Temperature is converted to kelvin to always get a positive number.
         """
+        useWeekdaysRow = True
         arrayOfData = []
         arrayOfMax = []
         arrayOfMin = []
@@ -373,7 +374,7 @@ class csvFileFixer():
                     readFromFile.seek(0)
                     line = 0
                     for row in reader:
-                        if not rowNumber[index] == hourRow:
+                        if not rowNumber[index] == hourRow and not rowNumber[index] == weekdaysRow:
                             temporaryArray.append(float(row[rowNumber[index]]))
                             if rowNumber[index] == priceRow:
                                 value = row[rowNumber[index]]
@@ -382,10 +383,10 @@ class csvFileFixer():
                         else:
                             temporaryArray.append(row[rowNumber[index]])
                     arrayOfData.append(temporaryArray)
-                for something in priceDict:
-                    print priceDict[something]
+                #for something in priceDict:
+                    #print priceDict[something]
                 for index in range(len(arrayOfData)):
-                    if not rowNumber[index] == hourRow: #and not rowNumber[index] == priceRow:
+                    if not rowNumber[index] == hourRow and not rowNumber[index] == weekdaysRow:
                         if rowNumber[index] == temperatureRow:
                             constant = 273.15
                         else:
@@ -449,6 +450,9 @@ class csvFileFixer():
                             for hour in self.normalizeHourToArray(arrayOfData[column][row]):
                                 rowToWrite.append(hour)
                                 #print hour
+                        elif rowNumber[column] == weekdaysRow and useWeekdaysRow:
+                            for day in self.normalizeDaysToArray(arrayOfData[column][row]):
+                                rowToWrite.append(day)
                         else:
                             val = float(arrayOfData[column][row] + constant)
                             #0 to 1:
@@ -519,10 +523,21 @@ class csvFileFixer():
                  '21-22': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
                  '22-23': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
                  '23-00': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
-              }.get(hour, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        }.get(hour, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         return value
         #return float(float(value) / 23.0)
         #return float(value - float(23.0 / 2.0)) / float(23.0 / 2.0)
+
+    def normalizeDaysToArray(self, day):
+        value = {'Mon': [1, 0, 0, 0, 0, 0, 0],
+                 'Tue': [0, 1, 0, 0, 0, 0, 0],
+                 'Wed': [0, 0, 1, 0, 0, 0, 0],
+                 'Thu': [0, 0, 0, 1, 0, 0, 0],
+                 'Fri': [0, 0, 0, 0, 1, 0, 0],
+                 'Sat': [0, 0, 0, 0, 0, 1, 0],
+                 'Sun': [0, 0, 0, 0, 0, 0, 1]
+        }.get(day, [0, 0, 0, 0, 0, 0, 0])
+        return value
 
 
 def main():
@@ -544,7 +559,7 @@ def main():
     cleanedDocument = fileName + '_CLEANED.csv'
     correctedData = fileName + '_CORRECTED_DATA.csv'
     zeroToOneFile = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
-                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne_withPaperPrices_NOTrim.csv")
+                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne_withPaperPrices_1PTrim_Weekday.csv")
     brian = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
              + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_Brian.csv")
 
@@ -554,8 +569,8 @@ def main():
     fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
     fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
     fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
-                                     [consumptionRow, windSpeedRow, timeOfDayRow, priceRow],
-                                     temperatureRow, timeOfDayRow, True, priceRow)
+                                     [consumptionRow, windSpeedRow, timeOfDayRow, weekdaysRow, priceRow],
+                                     temperatureRow, timeOfDayRow, weekdaysRow, True, priceRow)
 
     #fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow, pressure])
     #fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
