@@ -136,10 +136,10 @@ class csvFileFixer():
                     for row in reader:
                         temporary.append(float(row[columns[index]]))
                         #print temporary
-                    maxPercentile.append(np.percentile(temporary, 99))
-                    print "MaxPercentile: " + str(np.percentile(temporary, 99))
-                    minPercentile.append(np.percentile(temporary, 1))
-                    print "MinPercentile: " + str(np.percentile(temporary, 1))
+                    maxPercentile.append(np.percentile(temporary, 95))
+                    print "MaxPercentile: " + str(np.percentile(temporary, 95))
+                    minPercentile.append(np.percentile(temporary, 5))
+                    print "MinPercentile: " + str(np.percentile(temporary, 5))
                 readFromFile.seek(0)
                 reader = csv.reader(readFromFile, delimiter=self.delimiter)
                 for row in reader:
@@ -559,7 +559,7 @@ def main():
     cleanedDocument = fileName + '_CLEANED.csv'
     correctedData = fileName + '_CORRECTED_DATA.csv'
     zeroToOneFile = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
-                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne_withPaperPrices_1PTrim_Weekday.csv")
+                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne_withPaperPrices_5PTrim_Weekday.csv")
     brian = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
              + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_Brian.csv")
 

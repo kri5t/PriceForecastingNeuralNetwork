@@ -1,13 +1,24 @@
 import csv
+import multiprocessing
 from os import listdir
 from os.path import isfile, join
+import threading
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
+from multiprocessing import JoinableQueue as Queue, Process as Thread
+import sys
+import time
 
 
 class Plotter():
-    def __init__(self):
+    pdfName = ""
+    fileName = ""
+    dbg = multiprocessing.get_logger().info
+
+    def __init__(self, fileName, pdfName):
         """ Init method """
+        self.pdfName = pdfName
+        self.fileName = fileName
 
     def printIdealActualOutput(self, pathName):
         actualProduction = []
@@ -82,7 +93,8 @@ class Plotter():
         lengthArray = []
         lowest = 99999
         highest = 0
-        numberOfEntries = 1000
+        offSet = 3000
+        numberOfEntries = 4500
         with open(fileName, 'rb') as csvfile:
             dat = csv.reader(csvfile, delimiter=',')
             headers = dat.next()
@@ -90,6 +102,9 @@ class Plotter():
             i = 0
             for row in dat:
                 if not "TOTAL" in row[0]:
+                    i += 1
+                    if i < offSet:
+                        continue
                     actualProduction.append(int(float(row[0])))
                     idealProduction.append(int(float(row[1])))
                     if int(float(row[0])) < lowest:
@@ -101,9 +116,9 @@ class Plotter():
                     if int(float(row[1])) > highest:
                         highest = int(float(row[1]))
 
-                    i += 1
+
                     lengthArray.append(i)
-                    if i > numberOfEntries:
+                    if i > (numberOfEntries + offSet):
                         break
 
         fig, ax = plt.subplots()
@@ -128,8 +143,8 @@ class Plotter():
         #   ax.set_xlim(1, 12)
         ax.set_xlabel('2012 Hours', color='blue')
         ax.set_ylabel('Price', color='red')
-        ax.set_xlim(0, numberOfEntries)
-        newax.set_xlim(0, numberOfEntries)
+        ax.set_xlim(0 + offSet, numberOfEntries + offSet)
+        newax.set_xlim(0 + offSet, numberOfEntries + offSet)
 
 
         #p2, = newax.plot(lengthArray, idealProduction, marker='^', linestyle='-', color="green",
@@ -155,17 +170,43 @@ class Plotter():
         pp.savefig(fig)
         pp.close()
 
+    def run(self, queue, dqueue):
+        nfig = queue.get()
+        try:
+            self.printIdealActualOutputPlot(self.fileName, self.pdfName)
+            queue.task_done()
+        finally:
+            dqueue.put(nfig)
+
 
 def main():
     pathName = "../csvFiles/FilesToPlot/"
-    printer = Plotter()
+    #printer = Plotter()
     #printer.printIdealActualOutput(pathName)
     #fileName = pathName + "StandardSet_PREDICT1369168828979.csv"
+    # start threads
+    fqueue = Queue()
+    dqueue = Queue()
+
+    threads = []
     onlyFiles = [f for f in listdir(pathName) if isfile(join(pathName, f))]
     for filename in onlyFiles:
-        if "24HOUR" in filename:
-            #print "ok"
-            printer.printIdealActualOutputPlot(pathName + filename, filename)
+        if "PREDICT" in filename:
+            threads += [Thread(target=Plotter(pathName + filename, filename).run, args=(fqueue, dqueue))]
+
+    i = 0
+    for t in threads:
+        t.daemon = True
+        t.start()
+        i += 1
+
+    print 1
+    for fig in xrange(i):
+        fqueue.put(fig)
+
+    for _ in xrange(i):
+        dqueue.get()
+
 
 
 if __name__ == '__main__':
