@@ -136,10 +136,10 @@ class csvFileFixer():
                     for row in reader:
                         temporary.append(float(row[columns[index]]))
                         #print temporary
-                    maxPercentile.append(np.percentile(temporary, 95))
-                    print "MaxPercentile: " + str(np.percentile(temporary, 95))
-                    minPercentile.append(np.percentile(temporary, 5))
-                    print "MinPercentile: " + str(np.percentile(temporary, 5))
+                    maxPercentile.append(np.percentile(temporary, 99))
+                    print "MaxPercentile: " + str(np.percentile(temporary, 99))
+                    minPercentile.append(np.percentile(temporary, 1))
+                    print "MinPercentile: " + str(np.percentile(temporary, 1))
                 readFromFile.seek(0)
                 reader = csv.reader(readFromFile, delimiter=self.delimiter)
                 for row in reader:
@@ -349,7 +349,7 @@ class csvFileFixer():
         #self.c.execute("DROP TABLE dataKristianNormalized")
 
     def normalizeZeroToOneUsingCSV(self, inputDocument, outputDocument, rowNumber, temperatureRow, hourRow, weekdaysRow
-                                   , useLastDaysPrice, priceRow):
+                                   , dateRow, useLastDaysPrice, priceRow):
         """
         Returns an array that contains a normalization of the 4 input types:
         consumption, wind speed, temperature, price
@@ -357,6 +357,7 @@ class csvFileFixer():
         Temperature is converted to kelvin to always get a positive number.
         """
         useWeekdaysRow = True
+        useDateRow = True
         arrayOfData = []
         arrayOfMax = []
         arrayOfMin = []
@@ -374,7 +375,8 @@ class csvFileFixer():
                     readFromFile.seek(0)
                     line = 0
                     for row in reader:
-                        if not rowNumber[index] == hourRow and not rowNumber[index] == weekdaysRow:
+                        if not rowNumber[index] == hourRow and not rowNumber[index] == weekdaysRow and not rowNumber[
+                            index] == dateRow:
                             temporaryArray.append(float(row[rowNumber[index]]))
                             if rowNumber[index] == priceRow:
                                 value = row[rowNumber[index]]
@@ -383,10 +385,10 @@ class csvFileFixer():
                         else:
                             temporaryArray.append(row[rowNumber[index]])
                     arrayOfData.append(temporaryArray)
-                #for something in priceDict:
+                    #for something in priceDict:
                     #print priceDict[something]
                 for index in range(len(arrayOfData)):
-                    if not rowNumber[index] == hourRow and not rowNumber[index] == weekdaysRow:
+                    if not rowNumber[index] == hourRow and not rowNumber[index] == weekdaysRow and not rowNumber[index] == dateRow:
                         if rowNumber[index] == temperatureRow:
                             constant = 273.15
                         else:
@@ -453,6 +455,9 @@ class csvFileFixer():
                         elif rowNumber[column] == weekdaysRow and useWeekdaysRow:
                             for day in self.normalizeDaysToArray(arrayOfData[column][row]):
                                 rowToWrite.append(day)
+                        elif rowNumber[column] == dateRow and useDateRow:
+                            for date in self.normalizeDateToMonthArray(arrayOfData[column][row]):
+                                rowToWrite.append(date)
                         else:
                             val = float(arrayOfData[column][row] + constant)
                             #0 to 1:
@@ -539,6 +544,34 @@ class csvFileFixer():
         }.get(day, [0, 0, 0, 0, 0, 0, 0])
         return value
 
+    def normalizeDateToArray(self, date):
+        month = int(date.split("/")[0])
+        if month == 12 or month == 1 or month == 2:
+            return [1, 0, 0, 0]
+        if month == 3 or month == 4 or month == 5:
+            return [0, 1, 0, 0]
+        if month == 6 or month == 7 or month == 8:
+            return [0, 0, 1, 0]
+        if month == 9 or month == 10 or month == 11:
+            return [0, 0, 0, 1]
+
+    def normalizeDateToMonthArray(self, date):
+        month = int(date.split("/")[0])
+        value = {1: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 2: [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 3: [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                 4: [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                 5: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                 6: [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                 7: [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                 8: [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                 9: [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                 10: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                 11: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                 12: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        }.get(month, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        return value
+
 
 def main():
     fixer = csvFileFixer(",", False)
@@ -552,6 +585,7 @@ def main():
     windDirection = 8
     windProduction = 6
     pressure = 7
+    dateRow = 0
 
     fileName = '../csvFiles/YEAR_2011_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_06-05-2013'
     filePath = fileName + '.csv'
@@ -559,7 +593,7 @@ def main():
     cleanedDocument = fileName + '_CLEANED.csv'
     correctedData = fileName + '_CORRECTED_DATA.csv'
     zeroToOneFile = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
-                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne_withPaperPrices_5PTrim_Weekday.csv")
+                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne_withPaperPrices_1PTrim_Weekday_SeasonsAsMonth.csv")
     brian = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
              + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_Brian.csv")
 
@@ -569,8 +603,8 @@ def main():
     fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
     fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
     fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
-                                     [consumptionRow, windSpeedRow, timeOfDayRow, weekdaysRow, priceRow],
-                                     temperatureRow, timeOfDayRow, weekdaysRow, True, priceRow)
+                                     [consumptionRow, windSpeedRow, timeOfDayRow, dateRow, weekdaysRow, priceRow],
+                                     temperatureRow, timeOfDayRow, weekdaysRow, dateRow, True, priceRow)
 
     #fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow, pressure])
     #fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
