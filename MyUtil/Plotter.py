@@ -6,6 +6,7 @@ import threading
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 from multiprocessing import JoinableQueue as Queue, Process as Thread
+from datetime import datetime
 import sys
 import time
 
@@ -93,8 +94,8 @@ class Plotter():
         lengthArray = []
         lowest = 99999
         highest = 0
-        offSet = 3000
-        numberOfEntries = 4500
+        offSet = 0
+        numberOfEntries = 1500
         with open(fileName, 'rb') as csvfile:
             dat = csv.reader(csvfile, delimiter=',')
             headers = dat.next()
@@ -188,6 +189,8 @@ def main():
     fqueue = Queue()
     dqueue = Queue()
 
+    start = datetime.now()
+
     threads = []
     onlyFiles = [f for f in listdir(pathName) if isfile(join(pathName, f))]
     for filename in onlyFiles:
@@ -200,12 +203,17 @@ def main():
         t.start()
         i += 1
 
-    print 1
+    print i
     for fig in xrange(i):
         fqueue.put(fig)
 
     for _ in xrange(i):
         dqueue.get()
+
+    for t in threads:
+        t.join()
+
+    print datetime.now() - start
 
 
 
