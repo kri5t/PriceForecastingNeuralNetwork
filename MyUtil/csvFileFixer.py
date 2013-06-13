@@ -357,7 +357,7 @@ class csvFileFixer():
         Temperature is converted to kelvin to always get a positive number.
         """
         useWeekdaysRow = True
-        useDateRow = True
+        useDateRow = False
         arrayOfData = []
         arrayOfMax = []
         arrayOfMin = []
@@ -593,7 +593,7 @@ def main():
     cleanedDocument = fileName + '_CLEANED.csv'
     correctedData = fileName + '_CORRECTED_DATA.csv'
     zeroToOneFile = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
-                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne_withPaperPrices_1PTrim_Weekday_SeasonsAsMonth.csv")
+                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne_withPaperPrices_1PTrim_Weekday_TEMPERATURE(noDemand).csv")
     brian = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
              + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_Brian.csv")
 
@@ -603,7 +603,7 @@ def main():
     fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
     fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
     fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
-                                     [consumptionRow, windSpeedRow, timeOfDayRow, dateRow, weekdaysRow, priceRow],
+                                     [temperatureRow, windSpeedRow, timeOfDayRow, weekdaysRow, priceRow],
                                      temperatureRow, timeOfDayRow, weekdaysRow, dateRow, True, priceRow)
 
     #fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow, pressure])
