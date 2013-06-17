@@ -349,15 +349,17 @@ class csvFileFixer():
         #self.c.execute("DROP TABLE dataKristianNormalized")
 
     def normalizeZeroToOneUsingCSV(self, inputDocument, outputDocument, rowNumber, temperatureRow, hourRow, weekdaysRow
-                                   , dateRow, useLastDaysPrice, priceRow):
+                                   , dateRow, useSeasonal, useMatrix, priceRow):
         """
         Returns an array that contains a normalization of the 4 input types:
         consumption, wind speed, temperature, price
 
         Temperature is converted to kelvin to always get a positive number.
         """
+        useLastDaysPrice = True
         useWeekdaysRow = True
-        useDateRow = False
+        useDateRow = True
+        usePaperPrices = True
         arrayOfData = []
         arrayOfMax = []
         arrayOfMin = []
@@ -388,7 +390,8 @@ class csvFileFixer():
                     #for something in priceDict:
                     #print priceDict[something]
                 for index in range(len(arrayOfData)):
-                    if not rowNumber[index] == hourRow and not rowNumber[index] == weekdaysRow and not rowNumber[index] == dateRow:
+                    if not rowNumber[index] == hourRow and not rowNumber[index] == weekdaysRow and not rowNumber[
+                        index] == dateRow:
                         if rowNumber[index] == temperatureRow:
                             constant = 273.15
                         else:
@@ -418,27 +421,27 @@ class csvFileFixer():
                         if rowNumber[column] == priceRow and useLastDaysPrice:
                             if self.lastPrice == 0:
                                 self.lastPrice = self.normalizeValue(float(arrayOfData[column][row]), maxVal, minVal)
-
+                            add = 24
                             if row > (28 * 24):
-                                add = 24
-                                rowToWrite.append(
-                                    self.normalizeValue(float(priceDict[row - (7 * add)]), maxVal, minVal))
-                                rowToWrite.append(
-                                    self.normalizeValue(float(priceDict[row - (7 * add)]), maxVal, minVal))
-                                rowToWrite.append(
-                                    self.normalizeValue(float(priceDict[row - (7 * add)]), maxVal, minVal))
-                                rowToWrite.append(
-                                    self.normalizeValue(float(priceDict[row - (14 * add)]), maxVal, minVal))
-                                rowToWrite.append(
-                                    self.normalizeValue(float(priceDict[row - (21 * add)]), maxVal, minVal))
-                                rowToWrite.append(
-                                    self.normalizeValue(float(priceDict[row - (28 * add)]), maxVal, minVal))
-                                rowToWrite.append(
-                                    self.normalizeValue(float(priceDict[row - (1 * add)]), maxVal, minVal))
-                                rowToWrite.append(
-                                    self.normalizeValue(float(priceDict[row - (1 * add)]), maxVal, minVal))
-                                rowToWrite.append(
-                                    self.normalizeValue(float(priceDict[row - (1 * add)]), maxVal, minVal))
+                                if usePaperPrices:
+                                    rowToWrite.append(
+                                        self.normalizeValue(float(priceDict[row - (7 * add)]), maxVal, minVal))
+                                    rowToWrite.append(
+                                        self.normalizeValue(float(priceDict[row - (7 * add)]), maxVal, minVal))
+                                    rowToWrite.append(
+                                        self.normalizeValue(float(priceDict[row - (7 * add)]), maxVal, minVal))
+                                    rowToWrite.append(
+                                        self.normalizeValue(float(priceDict[row - (14 * add)]), maxVal, minVal))
+                                    rowToWrite.append(
+                                        self.normalizeValue(float(priceDict[row - (21 * add)]), maxVal, minVal))
+                                    rowToWrite.append(
+                                        self.normalizeValue(float(priceDict[row - (28 * add)]), maxVal, minVal))
+                                    rowToWrite.append(
+                                        self.normalizeValue(float(priceDict[row - (1 * add)]), maxVal, minVal))
+                                    rowToWrite.append(
+                                        self.normalizeValue(float(priceDict[row - (1 * add)]), maxVal, minVal))
+                                    rowToWrite.append(
+                                        self.normalizeValue(float(priceDict[row - (1 * add)]), maxVal, minVal))
                                 if add == 24:
                                     rowToWrite.append(self.normalizeValue(float(priceDict[row - 1]), maxVal, minVal))
                             else:
@@ -449,15 +452,36 @@ class csvFileFixer():
 
                         if rowNumber[column] == hourRow:
                             #print self.normalizeHourToArray(arrayOfData[column][row])
-                            for hour in self.normalizeHourToArray(arrayOfData[column][row]):
-                                rowToWrite.append(hour)
+                            if useMatrix:
+                                for hour in self.normalizeHourToArray(arrayOfData[column][row]):
+                                    rowToWrite.append(float(hour))
+                            else:
+                                for hour in self.normalizeHour(arrayOfData[column][row]):
+                                    rowToWrite.append(hour)
                                 #print hour
                         elif rowNumber[column] == weekdaysRow and useWeekdaysRow:
-                            for day in self.normalizeDaysToArray(arrayOfData[column][row]):
-                                rowToWrite.append(day)
+                            if useMatrix:
+                                for day in self.normalizeDaysToArray(arrayOfData[column][row]):
+                                    rowToWrite.append(float(day))
+                            else:
+                                for day in self.normalizeDays(arrayOfData[column][row]):
+                                    rowToWrite.append(day)
                         elif rowNumber[column] == dateRow and useDateRow:
-                            for date in self.normalizeDateToMonthArray(arrayOfData[column][row]):
-                                rowToWrite.append(date)
+                            if useSeasonal:
+                                if useMatrix:
+                                    for date in self.normalizeDateToArray(arrayOfData[column][row]):
+                                        rowToWrite.append(float(date))
+                                else:
+                                    for date in self.normalizeDate(arrayOfData[column][row]):
+                                        rowToWrite.append(date)
+                            else:
+                                if useMatrix:
+                                    for date in self.normalizeDateToMonthArray(arrayOfData[column][row]):
+                                        rowToWrite.append(float(date))
+                                else:
+                                    for date in self.normalizeDateToMonth(arrayOfData[column][row]):
+                                        rowToWrite.append(date)
+
                         else:
                             val = float(arrayOfData[column][row] + constant)
                             #0 to 1:
@@ -533,6 +557,16 @@ class csvFileFixer():
         #return float(float(value) / 23.0)
         #return float(value - float(23.0 / 2.0)) / float(23.0 / 2.0)
 
+    def normalizeDays(self, day):
+        value = {'Mon': 0,
+                 'Tue': 1,
+                 'Wed': 2,
+                 'Thu': 3,
+                 'Fri': 4,
+                 'Sat': 5,
+                 'Sun': 6}.get(day, 0)
+        return [float(value - float(6.0 / 2.0)) / float(6.0 / 2.0)]
+
     def normalizeDaysToArray(self, day):
         value = {'Mon': [1, 0, 0, 0, 0, 0, 0],
                  'Tue': [0, 1, 0, 0, 0, 0, 0],
@@ -540,9 +574,21 @@ class csvFileFixer():
                  'Thu': [0, 0, 0, 1, 0, 0, 0],
                  'Fri': [0, 0, 0, 0, 1, 0, 0],
                  'Sat': [0, 0, 0, 0, 0, 1, 0],
-                 'Sun': [0, 0, 0, 0, 0, 0, 1]
-        }.get(day, [0, 0, 0, 0, 0, 0, 0])
+                 'Sun': [0, 0, 0, 0, 0, 0, 1]}.get(day, [0, 0, 0, 0, 0, 0, 0])
         return value
+
+    def normalizeDate(self, date):
+        month = int(date.split("/")[0])
+        value = 0
+        if month == 12 or month == 1 or month == 2:
+            value = 0
+        if month == 3 or month == 4 or month == 5:
+            value = 1
+        if month == 6 or month == 7 or month == 8:
+            value = 2
+        if month == 9 or month == 10 or month == 11:
+            value = 3
+        return [float(value - float(3.0 / 2.0)) / float(3.0 / 2.0)]
 
     def normalizeDateToArray(self, date):
         month = int(date.split("/")[0])
@@ -554,6 +600,22 @@ class csvFileFixer():
             return [0, 0, 1, 0]
         if month == 9 or month == 10 or month == 11:
             return [0, 0, 0, 1]
+
+    def normalizeDateToMonth(self, date):
+        month = int(date.split("/")[0])
+        value = {1: 0,
+                 2: 1,
+                 3: 2,
+                 4: 3,
+                 5: 4,
+                 6: 5,
+                 7: 6,
+                 8: 7,
+                 9: 8,
+                 10: 9,
+                 11: 10,
+                 12: 11}.get(month, 0)
+        return [float(value - float(11.0 / 2.0)) / float(11.0 / 2.0)]
 
     def normalizeDateToMonthArray(self, date):
         month = int(date.split("/")[0])
@@ -568,8 +630,7 @@ class csvFileFixer():
                  9: [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
                  10: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
                  11: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-                 12: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
-        }.get(month, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+                 12: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]}.get(month, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         return value
 
 
@@ -593,26 +654,106 @@ def main():
     cleanedDocument = fileName + '_CLEANED.csv'
     correctedData = fileName + '_CORRECTED_DATA.csv'
     zeroToOneFile = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
-                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_ZeroToOne_withPaperPrices_1PTrim_Weekday_TEMPERATURE(noDemand).csv")
-    brian = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
-             + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_Brian.csv")
+                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_"
+                     + "MinusOneToOne_NoTrim_"
+                     + "Price.csv")
 
     #fixer.printCsvDocument(filePath)
 
-    fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow])
-    fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
-    fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
-    fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
-                                     [temperatureRow, windSpeedRow, timeOfDayRow, weekdaysRow, priceRow],
-                                     temperatureRow, timeOfDayRow, weekdaysRow, dateRow, True, priceRow)
+    #fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow])
+    #fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
+    #fixer.fahrenheitToKelvin(correctedData, toKelvin, temperatureRow)
+    #fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
+    #                                 [consumptionRow, windSpeedRow, timeOfDayRow, weekdaysRow, priceRow],
+    #                                 temperatureRow, timeOfDayRow, weekdaysRow, dateRow, True, priceRow)
 
-    #fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow, pressure])
-    #fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
-    #fixer.removeUsingPercentile(toKelvin, correctedData, [windProduction])
-    #fixer.normalizeZeroToOneUsingCSV(correctedData, brian,
-    #                                 [consumptionRow, windSpeedRow, timeOfDayRow, temperatureRow, pressure,
-    #                                  windProduction], temperatureRow, timeOfDayRow, False, priceRow)
+    useMatrix = False
+    useSeasons = False
+    for j in range(2):
+        fileParameters = ""
+        if j is 0:
+            fileParameters += "runFilesFolder/Paper_Price_Consump_"
+        if j is 1:
+            fileParameters += "runFilesFolder/Paper_MATRIX_Price_Consump_"
+            useMatrix = True
+        for i in range(4):
+            otherParameters = fileParameters
+            myStartArray = []
+            if i == 0:
+                myStartArray += []
+                otherParameters += ""
+            if i == 1:
+                myStartArray += [windSpeedRow]
+                otherParameters += "windSpeed_"
+            if i == 2:
+                myStartArray += [windSpeedRow, temperatureRow]
+                otherParameters += "windSpeed_temperatureRow_"
+            if i == 3:
+                myStartArray += [temperatureRow]
+                otherParameters += "temperatureRow_"
 
+            for k in range(12):
+                lastParameters = otherParameters
+                myArray = [consumptionRow]
+                myArray += myStartArray
+                print myArray
+                if k is 0:
+                    myArray += [timeOfDayRow]
+                    lastParameters += "timeOfDay"
+                    useSeasons = False
+                if k is 1:
+                    myArray += [timeOfDayRow, dateRow]
+                    lastParameters += "timeOfDay_monthOfYear"
+                    useSeasons = False
+                if k is 2:
+                    myArray += [timeOfDayRow, dateRow]
+                    lastParameters += "timeOfDay_seasonOfYear"
+                    useSeasons = True
+                if k is 3:
+                    myArray += [timeOfDayRow, weekdaysRow]
+                    lastParameters += "timeOfDay_weekdays_"
+                    useSeasons = False
+                if k is 4:
+                    myArray += [timeOfDayRow, weekdaysRow, dateRow]
+                    lastParameters += "timeOfDay_weekdays_monthOfYear"
+                    useSeasons = False
+                if k is 5:
+                    myArray += [timeOfDayRow, weekdaysRow, dateRow]
+                    lastParameters += "timeOfDay_weekdays_seasonOfYear"
+                    useSeasons = True
+                if k is 6:
+                    myArray += [weekdaysRow]
+                    lastParameters += "weekdays"
+                    useSeasons = False
+                if k is 7:
+                    myArray += [weekdaysRow, dateRow]
+                    lastParameters += "weekdays_monthOfYear"
+                    useSeasons = False
+                if k is 8:
+                    myArray += [weekdaysRow, dateRow]
+                    lastParameters += "weekdays_seasonOfYear"
+                    useSeasons = True
+                if k is 9:
+                    myArray += [dateRow]
+                    lastParameters += "monthOfYear"
+                    useSeasons = False
+                if k is 10:
+                    myArray += [dateRow]
+                    lastParameters += "seasonOfYear"
+                    useSeasons = True
+                if k is 11:
+                    myArray += []
+                    lastParameters += ""
+                    useSeasons = False
+                myArray += [priceRow]
+                zeroToOneFile = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
+                                 + "/" + lastParameters + ".csv")
+                fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow])
+                #fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
+                fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
+                fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
+                                                 myArray,
+                                                 temperatureRow, timeOfDayRow, weekdaysRow, dateRow, useSeasons, useMatrix, priceRow)
 
 if __name__ == '__main__':
     main()

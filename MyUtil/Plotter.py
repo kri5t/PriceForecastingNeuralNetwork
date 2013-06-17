@@ -95,7 +95,7 @@ class Plotter():
         lowest = 99999
         highest = 0
         offSet = 0
-        numberOfEntries = 4000
+        numberOfEntries = 7800
         with open(fileName, 'rb') as csvfile:
             dat = csv.reader(csvfile, delimiter=',')
             headers = dat.next()
@@ -194,7 +194,7 @@ def main():
     threads = []
     onlyFiles = [f for f in listdir(pathName) if isfile(join(pathName, f))]
     for filename in onlyFiles:
-        if "2012" in filename:
+        if "PREDICT" in filename:
             threads += [Thread(target=Plotter(pathName + filename, filename).run, args=(fqueue, dqueue))]
 
     i = 0
