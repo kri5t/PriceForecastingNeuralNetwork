@@ -351,7 +351,7 @@ class csvFileFixer():
         #self.c.execute("DROP TABLE dataKristianNormalized")
 
     def normalizeZeroToOneUsingCSV(self, inputDocument, outputDocument, rowNumber, temperatureRow, hourRow, weekdaysRow
-                                   , dateRow, useSeasonal, useMatrix, priceRow):
+                                   , dateRow, useSeasonal, useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix,  priceRow):
         """
         Returns an array that contains a normalization of the 4 input types:
         consumption, wind speed, temperature, price
@@ -454,7 +454,7 @@ class csvFileFixer():
 
                         if rowNumber[column] == hourRow:
                             #print self.normalizeHourToArray(arrayOfData[column][row])
-                            if useMatrix:
+                            if useHourlyMatrix:
                                 for hour in self.normalizeHourToArray(arrayOfData[column][row]):
                                     rowToWrite.append(float(hour))
                             else:
@@ -462,7 +462,7 @@ class csvFileFixer():
                                     rowToWrite.append(hour)
                                 #print hour
                         elif rowNumber[column] == weekdaysRow and useWeekdaysRow:
-                            if useMatrix:
+                            if useWeekdaysMatrix:
                                 for day in self.normalizeDaysToArray(arrayOfData[column][row]):
                                     rowToWrite.append(float(day))
                             else:
@@ -470,14 +470,14 @@ class csvFileFixer():
                                     rowToWrite.append(day)
                         elif rowNumber[column] == dateRow and useDateRow:
                             if useSeasonal:
-                                if useMatrix:
+                                if useSeasonMatrix:
                                     for date in self.normalizeDateToArray(arrayOfData[column][row]):
                                         rowToWrite.append(float(date))
                                 else:
                                     for date in self.normalizeDate(arrayOfData[column][row]):
                                         rowToWrite.append(date)
                             else:
-                                if useMatrix:
+                                if useSeasonMatrix:
                                     for date in self.normalizeDateToMonthArray(arrayOfData[column][row]):
                                         rowToWrite.append(float(date))
                                 else:
@@ -655,7 +655,7 @@ def main():
     toKelvin = fileName + '_kelvin.csv'
     cleanedDocument = fileName + '_CLEANED.csv'
     correctedData = fileName + '_CORRECTED_DATA.csv'
-    zeroToOneFile = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
+    zeroToOneFile = ("/Users/kristian/git/TheNetwork/EncogNeuralNetwork"
                      + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_"
                      + "MinusOneToOne_NoTrim_"
                      + "Price.csv")
@@ -674,10 +674,7 @@ def main():
     for j in range(2):
         fileParameters = ""
         if j is 0:
-            fileParameters += "runFilesFolder/00Price_Consump_"
-        if j is 1:
-            fileParameters += "runFilesFolder/00MATRIX_Price_Consump_"
-            useMatrix = True
+            fileParameters += "runFilesFolder/MIXED00Price_Consump_"
         for i in range(1, 3):
             otherParameters = fileParameters
             myStartArray = []
@@ -694,10 +691,13 @@ def main():
                 myStartArray += [temperatureRow]
                 otherParameters += "temperatureRow_"
 
-            for k in range(0, 6):
+            for k in range(1, 8):
                 lastParameters = otherParameters
                 myArray = [consumptionRow]
                 myArray += myStartArray
+                useHourlyMatrix = True
+                useWeekdaysMatrix = True
+                useSeasonMatrix = False
                 print myArray
                 if k is 0:
                     myArray += [timeOfDayRow]
@@ -705,23 +705,23 @@ def main():
                     useSeasons = False
                 if k is 1:
                     myArray += [timeOfDayRow, dateRow]
-                    lastParameters += "timeOfDay_monthOfYear"
+                    lastParameters += "timeOfDayMATRIX_monthOfYearMATRIX"
                     useSeasons = False
                 if k is 2:
                     myArray += [timeOfDayRow, dateRow]
-                    lastParameters += "timeOfDay_seasonOfYear"
+                    lastParameters += "timeOfDayMATRIX_seasonOfYearMATRIX"
                     useSeasons = True
                 if k is 3:
                     myArray += [timeOfDayRow, weekdaysRow]
-                    lastParameters += "timeOfDay_weekdays"
+                    lastParameters += "timeOfDayMATRIX_weekdays"
                     useSeasons = False
                 if k is 4:
                     myArray += [timeOfDayRow, weekdaysRow, dateRow]
-                    lastParameters += "timeOfDay_weekdays_monthOfYear"
+                    lastParameters += "timeOfDayMATRIX_weekdays_monthOfYear"
                     useSeasons = False
                 if k is 5:
                     myArray += [timeOfDayRow, weekdaysRow, dateRow]
-                    lastParameters += "timeOfDay_weekdays_seasonOfYear"
+                    lastParameters += "timeOfDayMATRIX_weekdays_seasonOfYear"
                     useSeasons = True
                 if k is 6:
                     myArray += [weekdaysRow]
@@ -729,11 +729,11 @@ def main():
                     useSeasons = False
                 if k is 7:
                     myArray += [weekdaysRow, dateRow]
-                    lastParameters += "weekdays_monthOfYear"
+                    lastParameters += "weekdays_monthOfYearMATRIX"
                     useSeasons = False
                 if k is 8:
                     myArray += [weekdaysRow, dateRow]
-                    lastParameters += "weekdays_seasonOfYear"
+                    lastParameters += "weekdays_seasonOfYearMATRIX"
                     useSeasons = True
                 if k is 9:
                     myArray += [dateRow]
@@ -748,14 +748,14 @@ def main():
                     lastParameters += ""
                     useSeasons = False
                 myArray += [priceRow]
-                zeroToOneFile = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
+                zeroToOneFile = ("/Users/kristian/git/TheNetwork/EncogNeuralNetwork"
                                  + "/" + lastParameters + "00.csv")
                 fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow])
                 #fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
                 fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
                 fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
                                                  myArray,
-                                                 temperatureRow, timeOfDayRow, weekdaysRow, dateRow, useSeasons, useMatrix, priceRow)
+                                                 temperatureRow, timeOfDayRow, weekdaysRow, dateRow, useSeasons,  useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix, priceRow)
 
 if __name__ == '__main__':
     main()
