@@ -136,10 +136,12 @@ class csvFileFixer():
                     for row in reader:
                         temporary.append(float(row[columns[index]]))
                         #print temporary
-                    maxPercentile.append(np.percentile(temporary, 99))
-                    print "MaxPercentile: " + str(np.percentile(temporary, 99))
-                    minPercentile.append(np.percentile(temporary, 1))
-                    print "MinPercentile: " + str(np.percentile(temporary, 1))
+                    maximum = 95
+                    lowest = 5
+                    maxPercentile.append(np.percentile(temporary, maximum))
+                    print "MaxPercentile: " + str(np.percentile(temporary, maximum))
+                    minPercentile.append(np.percentile(temporary, lowest))
+                    print "MinPercentile: " + str(np.percentile(temporary, lowest))
                 readFromFile.seek(0)
                 reader = csv.reader(readFromFile, delimiter=self.delimiter)
                 for row in reader:
@@ -359,7 +361,7 @@ class csvFileFixer():
         useLastDaysPrice = True
         useWeekdaysRow = True
         useDateRow = True
-        usePaperPrices = True
+        usePaperPrices = False
         arrayOfData = []
         arrayOfMax = []
         arrayOfMin = []
@@ -672,11 +674,11 @@ def main():
     for j in range(2):
         fileParameters = ""
         if j is 0:
-            fileParameters += "runFilesFolder/Paper_Price_Consump_"
+            fileParameters += "runFilesFolder/00Price_Consump_"
         if j is 1:
-            fileParameters += "runFilesFolder/Paper_MATRIX_Price_Consump_"
+            fileParameters += "runFilesFolder/00MATRIX_Price_Consump_"
             useMatrix = True
-        for i in range(4):
+        for i in range(1, 3):
             otherParameters = fileParameters
             myStartArray = []
             if i == 0:
@@ -692,7 +694,7 @@ def main():
                 myStartArray += [temperatureRow]
                 otherParameters += "temperatureRow_"
 
-            for k in range(12):
+            for k in range(0, 6):
                 lastParameters = otherParameters
                 myArray = [consumptionRow]
                 myArray += myStartArray
@@ -711,7 +713,7 @@ def main():
                     useSeasons = True
                 if k is 3:
                     myArray += [timeOfDayRow, weekdaysRow]
-                    lastParameters += "timeOfDay_weekdays_"
+                    lastParameters += "timeOfDay_weekdays"
                     useSeasons = False
                 if k is 4:
                     myArray += [timeOfDayRow, weekdaysRow, dateRow]
@@ -747,7 +749,7 @@ def main():
                     useSeasons = False
                 myArray += [priceRow]
                 zeroToOneFile = ("/Users/kristian/Documents/workspace/EncogNeuralNetwork"
-                                 + "/" + lastParameters + ".csv")
+                                 + "/" + lastParameters + "00.csv")
                 fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow])
                 #fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
                 fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
