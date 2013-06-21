@@ -136,8 +136,8 @@ class csvFileFixer():
                     for row in reader:
                         temporary.append(float(row[columns[index]]))
                         #print temporary
-                    maximum = 95
-                    lowest = 5
+                    maximum = 99
+                    lowest = 1
                     maxPercentile.append(np.percentile(temporary, maximum))
                     print "MaxPercentile: " + str(np.percentile(temporary, maximum))
                     minPercentile.append(np.percentile(temporary, lowest))
@@ -351,7 +351,8 @@ class csvFileFixer():
         #self.c.execute("DROP TABLE dataKristianNormalized")
 
     def normalizeZeroToOneUsingCSV(self, inputDocument, outputDocument, rowNumber, temperatureRow, hourRow, weekdaysRow
-                                   , dateRow, useSeasonal, useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix,  priceRow):
+                                   , dateRow, useSeasonal, useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix,
+                                   usePaperPrices, priceRow):
         """
         Returns an array that contains a normalization of the 4 input types:
         consumption, wind speed, temperature, price
@@ -361,7 +362,6 @@ class csvFileFixer():
         useLastDaysPrice = True
         useWeekdaysRow = True
         useDateRow = True
-        usePaperPrices = False
         arrayOfData = []
         arrayOfMax = []
         arrayOfMin = []
@@ -460,7 +460,7 @@ class csvFileFixer():
                             else:
                                 for hour in self.normalizeHour(arrayOfData[column][row]):
                                     rowToWrite.append(hour)
-                                #print hour
+                                    #print hour
                         elif rowNumber[column] == weekdaysRow and useWeekdaysRow:
                             if useWeekdaysMatrix:
                                 for day in self.normalizeDaysToArray(arrayOfData[column][row]):
@@ -669,93 +669,173 @@ def main():
     #                                 [consumptionRow, windSpeedRow, timeOfDayRow, weekdaysRow, priceRow],
     #                                 temperatureRow, timeOfDayRow, weekdaysRow, dateRow, True, priceRow)
 
-    useMatrix = False
-    useSeasons = False
-    for j in range(2):
-        fileParameters = ""
-        if j is 0:
-            fileParameters += "runFilesFolder/MIXED00Price_Consump_"
-        for i in range(1, 3):
-            otherParameters = fileParameters
-            myStartArray = []
-            if i == 0:
-                myStartArray += []
-                otherParameters += ""
-            if i == 1:
-                myStartArray += [windSpeedRow]
-                otherParameters += "windSpeed_"
-            if i == 2:
-                myStartArray += [windSpeedRow, temperatureRow]
-                otherParameters += "windSpeed_temperatureRow_"
-            if i == 3:
-                myStartArray += [temperatureRow]
-                otherParameters += "temperatureRow_"
+    if True:
+        preFix = ""
+        useHourlyMatrix = False
+        useWeekdaysMatrix = False
+        useSeasonMatrix = False
+        useSeasons = False
+        usePaperPrices = False
+        listOfFiles = [
+            "MATRIX_Price_Consump_windSpeed_temperatureRow_timeOfDay_weekdays_seasonOfYear",
+            "MIXEDPrice_Consump_windSpeed_temperatureRow_timeOfDayMATRIX_weekdays_seasonOfYearMATRIX",
+            "MIXEDPrice_Consump_windSpeed_temperatureRow_timeOfDayMATRIX_monthOfYearMATRIX_PREDICT1371560863501",
+            "MATRIX_Price_Consump_windSpeed_timeOfDay_weekdays_monthOfYear_PREDICT1371470595375",
+            "MIXEDPrice_Consump_windSpeed_temperatureRow_timeOfDayMATRIX_weekdays",
+            "MIXEDPrice_Consump_windSpeed_temperatureRow_timeOfDayMATRIX_seasonOfYearMATRIX",
+            "MIXEDPrice_Consump_windSpeed_temperatureRow_timeOfDayMATRIX_weekdays_monthOfYearMATRIX",
+            "MIXEDPrice_Consump_windSpeed_temperatureRow_timeOfDay_weekdays_seasonOfYearMATRIX",
+            "MIXEDPrice_Consump_windSpeed_temperatureRow_timeOfDay_weekdaysMATRIX_monthOfYearMATRIX",
+            "MIXEDPrice_Consump_windSpeed_timeOfDayMATRIX_weekdays_monthOfYearMATRIX"]
+        for i in range(2):
+            for file in listOfFiles:
+                myArray = []
+                if "MATRIX" in file[:6]:
+                    useHourlyMatrix = True
+                    useWeekdaysMatrix = True
+                    useSeasonMatrix = True
+                if i == 1:
+                    usePaperPrices = True
+                    file = "PAPER" + file
+                if "Consump" in file:
+                    myArray += [consumptionRow]
+                if "windSpeed" in file:
+                    myArray += [windSpeedRow]
+                if "temperatureRow" in file:
+                    myArray += [temperatureRow]
+                if "timeOfDay" in file:
+                    if "timeOfDayMATRIX" in file:
+                        myArray += [timeOfDayRow]
+                        useHourlyMatrix = True
+                    else:
+                        myArray += [timeOfDayRow]
+                if "weekdays" in file:
+                    if "weekdaysMATRIX" in file:
+                        myArray += [weekdaysRow]
+                        useWeekdaysMatrix = True
+                    else:
+                        myArray += [weekdaysRow]
+                if "monthOfYear" in file:
+                    if "monthOfYearMATRIX" in file:
+                        myArray += [dateRow]
+                        useSeasonMatrix = True
+                    else:
+                        myArray += [dateRow]
+                if "seasonOfYear" in file:
+                    if "seasonOfYearMATRIX" in file:
+                        myArray += [dateRow]
+                        useSeasonMatrix = True
+                        useSeasons = True
+                    else:
+                        myArray += [dateRow]
+                        useSeasons = True
+                if "Price" in file:
+                    myArray += [priceRow]
 
-            for k in range(1, 8):
-                lastParameters = otherParameters
-                myArray = [consumptionRow]
-                myArray += myStartArray
-                useHourlyMatrix = True
-                useWeekdaysMatrix = True
-                useSeasonMatrix = False
-                print myArray
-                if k is 0:
-                    myArray += [timeOfDayRow]
-                    lastParameters += "timeOfDay"
-                    useSeasons = False
-                if k is 1:
-                    myArray += [timeOfDayRow, dateRow]
-                    lastParameters += "timeOfDayMATRIX_monthOfYearMATRIX"
-                    useSeasons = False
-                if k is 2:
-                    myArray += [timeOfDayRow, dateRow]
-                    lastParameters += "timeOfDayMATRIX_seasonOfYearMATRIX"
-                    useSeasons = True
-                if k is 3:
-                    myArray += [timeOfDayRow, weekdaysRow]
-                    lastParameters += "timeOfDayMATRIX_weekdays"
-                    useSeasons = False
-                if k is 4:
-                    myArray += [timeOfDayRow, weekdaysRow, dateRow]
-                    lastParameters += "timeOfDayMATRIX_weekdays_monthOfYear"
-                    useSeasons = False
-                if k is 5:
-                    myArray += [timeOfDayRow, weekdaysRow, dateRow]
-                    lastParameters += "timeOfDayMATRIX_weekdays_seasonOfYear"
-                    useSeasons = True
-                if k is 6:
-                    myArray += [weekdaysRow]
-                    lastParameters += "weekdays"
-                    useSeasons = False
-                if k is 7:
-                    myArray += [weekdaysRow, dateRow]
-                    lastParameters += "weekdays_monthOfYearMATRIX"
-                    useSeasons = False
-                if k is 8:
-                    myArray += [weekdaysRow, dateRow]
-                    lastParameters += "weekdays_seasonOfYearMATRIX"
-                    useSeasons = True
-                if k is 9:
-                    myArray += [dateRow]
-                    lastParameters += "monthOfYear"
-                    useSeasons = False
-                if k is 10:
-                    myArray += [dateRow]
-                    lastParameters += "seasonOfYear"
-                    useSeasons = True
-                if k is 11:
-                    myArray += []
-                    lastParameters += ""
-                    useSeasons = False
-                myArray += [priceRow]
                 zeroToOneFile = ("/Users/kristian/git/TheNetwork/EncogNeuralNetwork"
-                                 + "/" + lastParameters + "00.csv")
-                fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow])
-                #fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
-                fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
+                                 + "/runFilesFolder/" + file + ".csv")
+                fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument,
+                                                     [consumptionRow, windSpeedRow, priceRow])
+                fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
+                fixer.fahrenheitToKelvin(correctedData, toKelvin, temperatureRow)
                 fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
                                                  myArray,
-                                                 temperatureRow, timeOfDayRow, weekdaysRow, dateRow, useSeasons,  useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix, priceRow)
+                                                 temperatureRow, timeOfDayRow, weekdaysRow, dateRow, useSeasons,
+                                                 useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix, usePaperPrices,
+                                                 priceRow)
+    else:
+        useMatrix = False
+        useSeasons = False
+        usePaperPrices = False
+        for j in range(2):
+            fileParameters = ""
+            if j is 0:
+                fileParameters += "runFilesFolder/MIXED00Price_Consump_"
+            for i in range(1, 3):
+                otherParameters = fileParameters
+                myStartArray = []
+                if i == 0:
+                    myStartArray += []
+                    otherParameters += ""
+                if i == 1:
+                    myStartArray += [windSpeedRow]
+                    otherParameters += "windSpeed_"
+                if i == 2:
+                    myStartArray += [windSpeedRow, temperatureRow]
+                    otherParameters += "windSpeed_temperatureRow_"
+                if i == 3:
+                    myStartArray += [temperatureRow]
+                    otherParameters += "temperatureRow_"
+
+                for k in range(1, 8):
+                    lastParameters = otherParameters
+                    myArray = [consumptionRow]
+                    myArray += myStartArray
+                    useHourlyMatrix = True
+                    useWeekdaysMatrix = True
+                    useSeasonMatrix = False
+                    print myArray
+                    if k is 0:
+                        myArray += [timeOfDayRow]
+                        lastParameters += "timeOfDay"
+                        useSeasons = False
+                    if k is 1:
+                        myArray += [timeOfDayRow, dateRow]
+                        lastParameters += "timeOfDayMATRIX_monthOfYearMATRIX"
+                        useSeasons = False
+                    if k is 2:
+                        myArray += [timeOfDayRow, dateRow]
+                        lastParameters += "timeOfDayMATRIX_seasonOfYearMATRIX"
+                        useSeasons = True
+                    if k is 3:
+                        myArray += [timeOfDayRow, weekdaysRow]
+                        lastParameters += "timeOfDayMATRIX_weekdays"
+                        useSeasons = False
+                    if k is 4:
+                        myArray += [timeOfDayRow, weekdaysRow, dateRow]
+                        lastParameters += "timeOfDayMATRIX_weekdays_monthOfYear"
+                        useSeasons = False
+                    if k is 5:
+                        myArray += [timeOfDayRow, weekdaysRow, dateRow]
+                        lastParameters += "timeOfDayMATRIX_weekdays_seasonOfYear"
+                        useSeasons = True
+                    if k is 6:
+                        myArray += [weekdaysRow]
+                        lastParameters += "weekdays"
+                        useSeasons = False
+                    if k is 7:
+                        myArray += [weekdaysRow, dateRow]
+                        lastParameters += "weekdays_monthOfYearMATRIX"
+                        useSeasons = False
+                    if k is 8:
+                        myArray += [weekdaysRow, dateRow]
+                        lastParameters += "weekdays_seasonOfYearMATRIX"
+                        useSeasons = True
+                    if k is 9:
+                        myArray += [dateRow]
+                        lastParameters += "monthOfYear"
+                        useSeasons = False
+                    if k is 10:
+                        myArray += [dateRow]
+                        lastParameters += "seasonOfYear"
+                        useSeasons = True
+                    if k is 11:
+                        myArray += []
+                        lastParameters += ""
+                        useSeasons = False
+                    myArray += [priceRow]
+                    zeroToOneFile = ("/Users/kristian/git/TheNetwork/EncogNeuralNetwork"
+                                     + "/" + lastParameters + "00.csv")
+                    fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument,
+                                                         [consumptionRow, windSpeedRow, priceRow])
+                    #fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
+                    fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
+                    fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
+                                                     myArray,
+                                                     temperatureRow, timeOfDayRow, weekdaysRow, dateRow, useSeasons,
+                                                     useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix,
+                                                     usePaperPrices, priceRow)
+
 
 if __name__ == '__main__':
     main()

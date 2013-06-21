@@ -140,13 +140,14 @@ class Plotter():
         #p1, = ax.plot(lengthArray, actualProduction, marker='s', linestyle='-', color="red",
         p1, = ax.plot(lengthArray, actualProduction, marker='o', markersize=3, linestyle='-', color="red",
                       label="Predicted Price")
-        # ax.set_ylim(85,115)
+
         #   ax.set_xlim(1, 12)
         ax.set_xlabel('2012 Hours', color='blue')
         ax.set_ylabel('Price', color='red')
         ax.set_xlim(0 + offSet, numberOfEntries + offSet)
         newax.set_xlim(0 + offSet, numberOfEntries + offSet)
-
+        ax.set_ylim(0, 1500)
+        newax.set_ylim(0, 1500)
 
         #p2, = newax.plot(lengthArray, idealProduction, marker='^', linestyle='-', color="green",
         p2, = newax.plot(lengthArray, idealProduction, marker='o', markersize=3, linestyle='-', color="green",
@@ -160,8 +161,8 @@ class Plotter():
         #lines = [p1]
 
         ax.legend(lines, [l.get_label() for l in lines])
-        newax.set_ylim([lowest - 10, highest + 10])
-        ax.set_ylim([lowest - 10, highest + 10])
+        #newax.set_ylim([lowest - 10, highest + 10])
+        #ax.set_ylim([lowest - 10, highest + 10])
         #newax.set_xlabel('Green X-axis', color='green')
         #newax.set_ylabel('Price', color='green')
 
