@@ -362,6 +362,7 @@ class csvFileFixer():
         useLastDaysPrice = True
         useWeekdaysRow = True
         useDateRow = True
+        firstOutput = False
         arrayOfData = []
         arrayOfMax = []
         arrayOfMin = []
@@ -495,10 +496,21 @@ class csvFileFixer():
                             rowToWrite.append(normalizedValue)
                             #print rowToWrite
                     if row > (28 * 24):
+                        if not firstOutput:
+                            print rowToWrite
+                            print arrayOfData[0][row]
+                            print arrayOfData[1][row]
+                            print arrayOfData[2][row]
+                            print arrayOfData[3][row]
+                            print arrayOfData[4][row]
+                            firstOutput = True
                         writer.writerow(rowToWrite)
 
     def normalizeValue(self, val, maxVal, minVal):
-        return (val - ((maxVal + minVal) / 2)) / ((maxVal - minVal) / 2)
+        val = float(val)
+        maxVal = float(maxVal)
+        minVal = float(minVal)
+        return (val - ((maxVal + minVal) / 2.0)) / ((maxVal - minVal) / 2.0)
         #return val
 
     def normalizeHour(self, hour):
@@ -650,6 +662,12 @@ def main():
     pressure = 7
     dateRow = 0
 
+    useHourlyMatrix = True
+    useWeekdaysMatrix = True
+    useSeasonMatrix = True
+    useSeasons = True
+    usePaperPrices = True
+
     fileName = '../csvFiles/YEAR_2011_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_06-05-2013'
     filePath = fileName + '.csv'
     toKelvin = fileName + '_kelvin.csv'
@@ -662,14 +680,16 @@ def main():
 
     #fixer.printCsvDocument(filePath)
 
-    #fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow])
-    #fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
-    #fixer.fahrenheitToKelvin(correctedData, toKelvin, temperatureRow)
-    #fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
-    #                                 [consumptionRow, windSpeedRow, timeOfDayRow, weekdaysRow, priceRow],
-    #                                 temperatureRow, timeOfDayRow, weekdaysRow, dateRow, True, priceRow)
+    fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow])
+    fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
+    fixer.fahrenheitToKelvin(correctedData, toKelvin, temperatureRow)
+    fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
+                                     [consumptionRow, windSpeedRow, timeOfDayRow, weekdaysRow, priceRow],
+                                     temperatureRow, timeOfDayRow, weekdaysRow, dateRow,  useSeasons,
+                                     useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix, usePaperPrices,
+                                     priceRow)
 
-    if True:
+    if False:
         preFix = ""
         useHourlyMatrix = False
         useWeekdaysMatrix = False
@@ -743,7 +763,7 @@ def main():
                                                  temperatureRow, timeOfDayRow, weekdaysRow, dateRow, useSeasons,
                                                  useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix, usePaperPrices,
                                                  priceRow)
-    else:
+    elif False:
         useMatrix = False
         useSeasons = False
         usePaperPrices = False
@@ -835,7 +855,8 @@ def main():
                                                      temperatureRow, timeOfDayRow, weekdaysRow, dateRow, useSeasons,
                                                      useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix,
                                                      usePaperPrices, priceRow)
-
+    else:
+        print "LOL"
 
 if __name__ == '__main__':
     main()

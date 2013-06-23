@@ -95,7 +95,7 @@ class Plotter():
         lowest = 99999
         highest = 0
         offSet = 0
-        numberOfEntries = 7800
+        numberOfEntries = 7600
         with open(fileName, 'rb') as csvfile:
             dat = csv.reader(csvfile, delimiter=',')
             headers = dat.next()
@@ -146,8 +146,8 @@ class Plotter():
         ax.set_ylabel('Price', color='red')
         ax.set_xlim(0 + offSet, numberOfEntries + offSet)
         newax.set_xlim(0 + offSet, numberOfEntries + offSet)
-        ax.set_ylim(0, 1500)
-        newax.set_ylim(0, 1500)
+        #ax.set_ylim(0, 1500)
+        #newax.set_ylim(0, 1500)
 
         #p2, = newax.plot(lengthArray, idealProduction, marker='^', linestyle='-', color="green",
         p2, = newax.plot(lengthArray, idealProduction, marker='o', markersize=3, linestyle='-', color="green",
