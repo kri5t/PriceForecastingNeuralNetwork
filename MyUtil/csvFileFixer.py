@@ -681,8 +681,8 @@ def main():
     #fixer.printCsvDocument(filePath)
 
     fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow])
-    fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
-    fixer.fahrenheitToKelvin(correctedData, toKelvin, temperatureRow)
+    #fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
+    fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
     fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
                                      [consumptionRow, windSpeedRow, timeOfDayRow, weekdaysRow, priceRow],
                                      temperatureRow, timeOfDayRow, weekdaysRow, dateRow,  useSeasons,
