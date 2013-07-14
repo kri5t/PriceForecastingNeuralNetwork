@@ -498,11 +498,6 @@ class csvFileFixer():
                     if row > (28 * 24):
                         if not firstOutput:
                             print rowToWrite
-                            print arrayOfData[0][row]
-                            print arrayOfData[1][row]
-                            print arrayOfData[2][row]
-                            print arrayOfData[3][row]
-                            print arrayOfData[4][row]
                             firstOutput = True
                         writer.writerow(rowToWrite)
 
@@ -664,8 +659,8 @@ def main():
 
     useHourlyMatrix = True
     useWeekdaysMatrix = True
-    useSeasonMatrix = True
-    useSeasons = True
+    useSeasonMatrix = False
+    useSeasons = False
     usePaperPrices = True
 
     fileName = '../csvFiles/YEAR_2011_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_06-05-2013'
@@ -673,16 +668,14 @@ def main():
     toKelvin = fileName + '_kelvin.csv'
     cleanedDocument = fileName + '_CLEANED.csv'
     correctedData = fileName + '_CORRECTED_DATA.csv'
-    zeroToOneFile = ("/Users/kristian/git/TheNetwork/EncogNeuralNetwork"
-                     + "/YEAR_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_29-04-2013_"
-                     + "MinusOneToOne_NoTrim_"
-                     + "Price.csv")
+    zeroToOneFile = ("/Users/kristian/git/TheNetwork/EncogNeuralNetwork/runFilesFolder/"
+                     + "PAPERPrice_Consumption_windSpeed_timeOfDayMATRIX_weekdaysMATRIX_1pTrim.csv")
 
     #fixer.printCsvDocument(filePath)
 
     fixer.cleanMinusAndNullInDocumentRow(filePath, cleanedDocument, [consumptionRow, windSpeedRow, priceRow])
-    #fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
-    fixer.fahrenheitToKelvin(cleanedDocument, toKelvin, temperatureRow)
+    fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
+    fixer.fahrenheitToKelvin(correctedData, toKelvin, temperatureRow)
     fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
                                      [consumptionRow, windSpeedRow, timeOfDayRow, weekdaysRow, priceRow],
                                      temperatureRow, timeOfDayRow, weekdaysRow, dateRow,  useSeasons,
