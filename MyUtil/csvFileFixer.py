@@ -12,6 +12,7 @@ class csvFileFixer():
     delimiter = ''
     c = None
     lastPrice = 0
+    lastWindProduction = 0
 
     def __init__(self, delimiter, useDB):
         """ Init method """
@@ -350,10 +351,28 @@ class csvFileFixer():
         return arrayOfNormalizedValues
         #self.c.execute("DROP TABLE dataKristianNormalized")
 
+    def calculateLargestAndLowestChangeInDemand(self, inputDocument):
+        print "lol"
+
     def normalizeZeroToOneUsingCSV(self, inputDocument, outputDocument, rowNumber, temperatureRow, hourRow, weekdaysRow
                                    , dateRow, useSeasonal, useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix,
-                                   usePaperPrices, priceRow):
+                                   usePaperPrices, useChangeInDemand, windProductionRow, demandRow, priceRow):
         """
+
+        :param inputDocument:
+        :param outputDocument:
+        :param rowNumber:
+        :param temperatureRow:
+        :param hourRow:
+        :param weekdaysRow:
+        :param dateRow:
+        :param useSeasonal:
+        :param useHourlyMatrix:
+        :param useWeekdaysMatrix:
+        :param useSeasonMatrix:
+        :param usePaperPrices:
+        :param windProductionRow:
+        :param priceRow:
         Returns an array that contains a normalization of the 4 input types:
         consumption, wind speed, temperature, price
 
@@ -368,6 +387,10 @@ class csvFileFixer():
         arrayOfMin = []
         arrayOfNormalizedValues = []
         priceDict = collections.OrderedDict()
+        maxChangeInDemand = 0
+        minChangeInDemand = 99999
+        lastDemand = 0
+        first = True
         print "LENGTH: " + str(len(rowNumber))
         print len(arrayOfNormalizedValues)
         with open(outputDocument, 'wb') as writeToFile:
@@ -387,11 +410,25 @@ class csvFileFixer():
                                 value = row[rowNumber[index]]
                                 priceDict.update({line: value})
                                 line += 1
+                            if rowNumber[index] == demandRow:
+                                demand = float(row[rowNumber[index]])
+                                if first:
+                                    first = False
+                                else:
+                                    changeInDemand = abs(demand - lastDemand)
+                                    if changeInDemand < minChangeInDemand:
+                                        minChangeInDemand = changeInDemand
+                                    if changeInDemand > maxChangeInDemand:
+                                        maxChangeInDemand = changeInDemand
+                                lastDemand = demand
                         else:
                             temporaryArray.append(row[rowNumber[index]])
                     arrayOfData.append(temporaryArray)
                     #for something in priceDict:
                     #print priceDict[something]
+                print "minChange" + str(minChangeInDemand)
+                print "maxChange" + str(maxChangeInDemand)
+                lastDemand = 0
                 for index in range(len(arrayOfData)):
                     if not rowNumber[index] == hourRow and not rowNumber[index] == weekdaysRow and not rowNumber[
                         index] == dateRow:
@@ -399,8 +436,8 @@ class csvFileFixer():
                             constant = 273.15
                         else:
                             constant = 0
-                        arrayOfMax.append(max(arrayOfData[index]) + constant)
-                        arrayOfMin.append(min(arrayOfData[index]) + constant)
+                        arrayOfMax.append(round(max(arrayOfData[index]) + constant, 2))
+                        arrayOfMin.append(round(min(arrayOfData[index]) + constant, 2))
                     #elif rowNumber[index] == priceRow:
                     #    arrayOfMax.append(1560.99)
                     #    arrayOfMin.append(-14.84)
@@ -452,7 +489,6 @@ class csvFileFixer():
                                     rowToWrite.append(0)
 
                                     #rowToWrite.append(self.lastPrice)
-
                         if rowNumber[column] == hourRow:
                             #print self.normalizeHourToArray(arrayOfData[column][row])
                             if useHourlyMatrix:
@@ -493,7 +529,13 @@ class csvFileFixer():
                             normalizedValue = self.normalizeValue(val, maxVal, minVal)
                             if rowNumber[column] == priceRow:
                                 self.lastPrice = normalizedValue
-                            rowToWrite.append(normalizedValue)
+                            if rowNumber[column] == windProductionRow:
+                                rowToWrite.append(self.lastWindProduction)
+                                self.lastWindProduction = normalizedValue
+                            if rowNumber[column] == demandRow and useChangeInDemand:
+                                rowToWrite.append(self.normalizeValue(abs(val - lastDemand), maxChangeInDemand, minChangeInDemand))
+                                lastDemand = val
+                            rowToWrite.append("%1.12f" % normalizedValue)
                             #print rowToWrite
                     if row > (28 * 24):
                         if not firstOutput:
@@ -659,9 +701,10 @@ def main():
 
     useHourlyMatrix = True
     useWeekdaysMatrix = True
-    useSeasonMatrix = False
-    useSeasons = False
-    usePaperPrices = True
+    useSeasonMatrix = True
+    useSeasons = True
+    usePaperPrices = False
+    useChangeInDemand = False
 
     fileName = '../csvFiles/YEAR_2011_2012_DA_EXCEL_FOR_DA_PRICE_FORECAST_06-05-2013'
     filePath = fileName + '.csv'
@@ -669,7 +712,7 @@ def main():
     cleanedDocument = fileName + '_CLEANED.csv'
     correctedData = fileName + '_CORRECTED_DATA.csv'
     zeroToOneFile = ("/Users/kristian/git/TheNetwork/EncogNeuralNetwork/runFilesFolder/"
-                     + "PAPERPrice_Consumption_windSpeed_timeOfDayMATRIX_weekdaysMATRIX_1pTrim.csv")
+                     + "MATRIX_Price_Consump_windSpeed_temperatureRow_timeOfDay_weekdays_seasonOfYear.csv")
 
     #fixer.printCsvDocument(filePath)
 
@@ -677,10 +720,10 @@ def main():
     fixer.removeUsingPercentile(cleanedDocument, correctedData, [priceRow])
     fixer.fahrenheitToKelvin(correctedData, toKelvin, temperatureRow)
     fixer.normalizeZeroToOneUsingCSV(toKelvin, zeroToOneFile,
-                                     [consumptionRow, windSpeedRow, timeOfDayRow, weekdaysRow, priceRow],
-                                     temperatureRow, timeOfDayRow, weekdaysRow, dateRow,  useSeasons,
-                                     useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix, usePaperPrices,
-                                     priceRow)
+                                     [consumptionRow, windSpeedRow, temperatureRow, timeOfDayRow, weekdaysRow, dateRow, priceRow],
+                                     temperatureRow, timeOfDayRow, weekdaysRow, dateRow, useSeasons,
+                                     useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix, usePaperPrices, useChangeInDemand,
+                                     windProduction, consumptionRow, priceRow)
 
     if False:
         preFix = ""
@@ -692,8 +735,8 @@ def main():
         listOfFiles = [
             "MATRIX_Price_Consump_windSpeed_temperatureRow_timeOfDay_weekdays_seasonOfYear",
             "MIXEDPrice_Consump_windSpeed_temperatureRow_timeOfDayMATRIX_weekdays_seasonOfYearMATRIX",
-            "MIXEDPrice_Consump_windSpeed_temperatureRow_timeOfDayMATRIX_monthOfYearMATRIX_PREDICT1371560863501",
-            "MATRIX_Price_Consump_windSpeed_timeOfDay_weekdays_monthOfYear_PREDICT1371470595375",
+            "MIXEDPrice_Consump_windSpeed_temperatureRow_timeOfDayMATRIX_monthOfYearMATRIX",
+            "MATRIX_Price_Consump_windSpeed_timeOfDay_weekdays_monthOfYear",
             "MIXEDPrice_Consump_windSpeed_temperatureRow_timeOfDayMATRIX_weekdays",
             "MIXEDPrice_Consump_windSpeed_temperatureRow_timeOfDayMATRIX_seasonOfYearMATRIX",
             "MIXEDPrice_Consump_windSpeed_temperatureRow_timeOfDayMATRIX_weekdays_monthOfYearMATRIX",
@@ -755,7 +798,7 @@ def main():
                                                  myArray,
                                                  temperatureRow, timeOfDayRow, weekdaysRow, dateRow, useSeasons,
                                                  useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix, usePaperPrices,
-                                                 priceRow)
+                                                 consumptionRow, priceRow)
     elif False:
         useMatrix = False
         useSeasons = False
@@ -847,9 +890,9 @@ def main():
                                                      myArray,
                                                      temperatureRow, timeOfDayRow, weekdaysRow, dateRow, useSeasons,
                                                      useHourlyMatrix, useWeekdaysMatrix, useSeasonMatrix,
-                                                     usePaperPrices, priceRow)
+                                                     usePaperPrices, consumptionRow, priceRow)
     else:
-        print "LOL"
+        print "DONE"
 
 if __name__ == '__main__':
     main()
